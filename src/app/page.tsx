@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -257,7 +258,7 @@ function Chatbot() {
                                <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
                                <AvatarFallback>AI</AvatarFallback>
                             </Avatar>
-                             <CardTitle className="text-sm font-semibold">SkinDeep AI Assistant</CardTitle>
+                             <CardTitle className="text-sm font-semibold">SkinSeva AI Assistant</CardTitle>
                          </div>
                         <Button size="icon" variant="ghost" onClick={toggleChat} className="h-6 w-6">
                             <XCircle className="h-4 w-4" />
@@ -302,6 +303,8 @@ export default function Home() {
   const [clinicData, setClinicData] = useState<ClinicInfo[] | null>(null);
   const [clinicLoading, setClinicLoading] = useState(false);
   const [clinicError, setClinicError] = useState<string | null>(null);
+  const [isClear, setIsClear] = useState<boolean | null>(null);
+  const [hasHumanSkin, setHasHumanSkin] = useState<boolean | null>(null);
 
 
   const uploadSectionRef = useRef<HTMLElement>(null);
@@ -370,9 +373,21 @@ export default function Home() {
             const imageUri = reader.result as string;
             console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData });
             try {
+                // Simulate image clarity and human skin checks
+                const isClearImage = true; // Replace with actual image analysis
+                const hasHumanSkinContent = true; // Replace with actual image analysis
+
+                if (!isClearImage) {
+                    setApiError("Image error. Upload clear human skin image.");
+                    setLoading(false);
+                    return;
+                }
+
                 const apiResult = await classifyImage({
                     imageUri: imageUri,
                     questionnaireData: questionnaireData || undefined, // Pass questionnaire data or undefined
+                    isClear: isClearImage,
+                    hasHumanSkin: hasHumanSkinContent,
                 });
                 console.log("API Response:", apiResult);
 
@@ -473,13 +488,22 @@ export default function Home() {
               // --- START Placeholder Data ---
                const fetchedClinics: ClinicInfo[] = [
                    { id: '1', name: 'District General Hospital - Dermatology Dept.', address: '123 Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in' },
-                   { id: '2', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true },
-                   { id: '3', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com'},
+                   { id: '2', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com'},
+                   { id: '3', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true },
                    { id: '4', name: 'Urban Primary Health Centre (UPHC)', address: '90 Sector 5, Urban Area', distance: '5.1 km', estimatedCost: 'Free / Minimal Fee (Govt.)', schemes: ['PMJAY Lite'], isGovernment: true },
                    { id: '5', name: 'Apollo Skin Care Center', address: '101 Apollo Ave, Mall Road', distance: '6.8 km', estimatedCost: '₹1200+ Consultation', schemes: [], isGovernment: false },
                ];
               // --- END Placeholder Data ---
 
+               // Sort clinics: Govt first, then by distance
+                fetchedClinics.sort((a, b) => {
+                    if (a.isGovernment && !b.isGovernment) return -1;  // Govt clinics first
+                    if (!a.isGovernment && b.isGovernment) return 1;   // Then non-govt
+                    // If both are govt or both are private, sort by distance:
+                    const distanceA = parseFloat(a.distance);
+                    const distanceB = parseFloat(b.distance);
+                    return distanceA - distanceB; //Sort ascending by distance
+                });
 
                setClinicData(fetchedClinics);
                setClinicLoading(false);
@@ -494,9 +518,6 @@ export default function Home() {
                    description: "Could not retrieve clinic information.",
                });
            }
-           // Note: Google Maps link opening is removed as results are shown in modal
-           // const mapsUrl = `https://www.google.com/maps/search/government+dermatologist+clinic+near+${latitude},${longitude}`;
-           // window.open(mapsUrl, '_blank');
          },
          (error) => {
            console.error("Error getting location:", error);
@@ -695,5 +716,4 @@ export default function Home() {
     </div>
   );
 }
-
 

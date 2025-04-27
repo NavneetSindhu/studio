@@ -1,8 +1,9 @@
+
 'use server';
 
 /**
  * @fileOverview This file defines a Genkit flow for classifying face images to predict potential skin diseases,
- * optionally using questionnaire data for context.
+ * optionally using questionnaire data for context. It also incorporates image analysis for clarity and human skin presence.
  *
  * The flow takes an image and optional questionnaire data as input and uses a Genkit prompt
  * to predict the disease, returning the predicted disease name along with a confidence percentage.
@@ -35,6 +36,8 @@ const ClassifyImageInputSchema = z.object({
       "A face image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   questionnaireData: QuestionnaireDataSchema.describe('Optional questionnaire data provided by the user.'),
+  isClear: z.boolean().optional().describe('Whether the image is clear enough for analysis.'),
+  hasHumanSkin: z.boolean().optional().describe('Whether the image contains human skin.'),
 });
 export type ClassifyImageInput = z.infer<typeof ClassifyImageInputSchema>;
 
@@ -64,7 +67,19 @@ const classifyImagePrompt = ai.definePrompt({
     schema: ClassifyImageOutputSchema, // Use the updated output schema
   },
   // Updated prompt to incorporate questionnaire data if available
-  prompt: `Analyze the given face image and predict the most likely skin disease. **Crucially, consider the provided user questionnaire data if available, as it offers valuable context.**
+  prompt: `
+  **Important Context:** You are an AI assistant specializing in the preliminary analysis of potential skin conditions from facial images. You **MUST NOT** provide medical diagnoses. Instead, provide possible conditions for informational purposes only.
+
+  Analyze the given face image and predict the most likely skin disease.
+
+  **Image Quality Checks:**
+  *   If \`isClear\` is false, the image is blurry or of poor quality, and you **MUST** respond with "Image quality is too poor for analysis." and confidencePercentage of 0.
+  *   If \`hasHumanSkin\` is false, the image does not appear to contain human skin, and you **MUST** respond with "Image does not appear to contain human skin." and confidencePercentage of 0.
+  *   If *both* image quality checks fail, prioritize reporting the "Image quality" issue.
+
+  If the image passes the quality checks, then continue with the analysis:
+
+  **Crucially, consider the provided user questionnaire data if available, as it offers valuable context.**
       Based on the HAM10000 dataset and common facial conditions, the possible skin diseases include (but are not limited to):
       - Actinic Keratosis (AKIEC): Rough, scaly patch on sun-exposed skin, pre-cancerous.
       - Basal Cell Carcinoma (BCC): Pearly or waxy bump, or a flat flesh-colored or brown scar-like lesion.
@@ -113,22 +128,38 @@ const classifyImageFlow = ai.defineFlow<
     console.log('Flow Input:', {
       imageUri: 'URI_preview_omitted',
       questionnaireData: input.questionnaireData,
-    }); // Log input to check questionnaire data
+      isClear: input.isClear,
+      hasHumanSkin: input.hasHumanSkin,
+    }); // Log input to check image and quality data
+
     const {output} = await classifyImagePrompt(input);
 
     // Basic validation/fallback for output
     if (!output) {
       throw new Error('AI analysis did not return a valid output.');
     }
-    if (!output.predictedDisease) {
-      output.predictedDisease = 'Analysis Inconclusive';
-    }
-    if (
-      typeof output.confidencePercentage !== 'number' ||
-      output.confidencePercentage < 0 ||
-      output.confidencePercentage > 100
-    ) {
-      output.confidencePercentage = 0; // Default confidence if invalid
+
+    //Prioritize handling image quality issues
+    if (!input.isClear) {
+        output.predictedDisease = "Image quality is too poor for analysis.";
+        output.confidencePercentage = 0;
+        output.notes = "Please upload a clearer image.";
+    } else if (!input.hasHumanSkin) {
+        output.predictedDisease = "Image does not appear to contain human skin.";
+        output.confidencePercentage = 0;
+        output.notes = "Please upload an image of human skin.";
+    } else {
+
+      if (!output.predictedDisease) {
+        output.predictedDisease = 'Analysis Inconclusive';
+      }
+      if (
+        typeof output.confidencePercentage !== 'number' ||
+        output.confidencePercentage < 0 ||
+        output.confidencePercentage > 100
+      ) {
+        output.confidencePercentage = 0; // Default confidence if invalid
+      }
     }
 
     console.log('Flow Output:', output);
