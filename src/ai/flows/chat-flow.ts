@@ -13,6 +13,7 @@
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 import {generate} from 'genkit/generate'; // Import generate function
+import {defineFlow, type Flow} from 'genkit'; // Import defineFlow and Flow type
 
 // Define schema for a single message in the history
 const MessageSchema = z.object({
@@ -35,14 +36,15 @@ export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
 // Define the async wrapper function which calls the flow
 export async function chatWithBot(input: ChatInput): Promise<ChatOutput> {
+  // Ensure the flow is defined before calling it
+  if (!chatFlow) {
+    throw new Error("Chat flow is not defined yet.");
+  }
   return chatFlow(input);
 }
 
-// Define the Genkit flow for the chatbot
-const chatFlow = ai.defineFlow<
-  typeof ChatInputSchema,
-  typeof ChatOutputSchema
->(
+// Define the Genkit flow for the chatbot using defineFlow directly
+const chatFlow: Flow<typeof ChatInputSchema, typeof ChatOutputSchema> = defineFlow(
   {
     name: 'chatFlow',
     inputSchema: ChatInputSchema,
@@ -94,8 +96,21 @@ const chatFlow = ai.defineFlow<
 
     } catch (error) {
       console.error('Error during Gemini API call in chatFlow:', error);
+      // Provide a more generic error message to the user
       return { response: 'Sorry, there was an error connecting to the AI assistant. Please try again later.' };
     }
   }
 );
 
+// Register the flow with Genkit using ai.defineFlow for potential discovery/tooling
+// Note: This creates a managed flow object, but we are using the 'chatFlow' function directly above.
+ai.defineFlow(
+   {
+     name: 'managedChatFlow', // Different name to avoid conflict if needed
+     inputSchema: ChatInputSchema,
+     outputSchema: ChatOutputSchema,
+   },
+   chatFlow // Pass the flow implementation function
+);
+
+    

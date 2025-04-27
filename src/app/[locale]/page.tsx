@@ -268,7 +268,12 @@ function Chatbot() {
             setIsBotTyping(true);
 
             try {
-                const chatInput: ChatInput = { message: newMessage, history: messages }; // Include history
+                 // Prepare only necessary history to avoid overly large context
+                 const historyToSend = messages.slice(-6).map(msg => ({ // Send last 6 messages max
+                    text: msg.text,
+                    sender: msg.sender
+                 }));
+                const chatInput: ChatInput = { message: newMessage, history: historyToSend }; // Include history
                 const botResponse: ChatOutput = await chatWithBot(chatInput);
                 const botMessage = { text: botResponse.response, sender: "bot" as const };
                 setMessages(prev => [...prev, botMessage]);
@@ -757,3 +762,4 @@ export default function Home() {
   );
 }
 
+    

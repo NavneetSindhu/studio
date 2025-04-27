@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { useTranslations } from 'next-intl'; // Import useTranslations
+// Import useTranslations if you have set up next-intl
+// import { useTranslations } from 'next-intl';
 
 
 // Define detailed information for common skin conditions
@@ -140,64 +141,100 @@ const getSeverityBadgeVariant = (severity: string): "default" | "secondary" | "d
 };
 
 // --- Main Page Component ---
-export default function SkinInfoPage() {
-    const t = useTranslations('SkinInfoPage'); // Initialize translations
+export default function SkinInfoPage() { // Renamed component to match file name
+    // Placeholder for translations - Replace with actual useTranslations if implemented
+    const t = (key: string) => {
+        // Simple placeholder implementation
+        const keyParts = key.split('.');
+        let currentVal: any = {
+            header: { title: 'SkinSeva', home: 'Home', skinInfo: 'Skin Disease Info' },
+            main: { title: 'Learn About Skin Conditions', subtitle: 'Explore common skin diseases, their symptoms, causes, and general care tips. This information is for educational purposes.', alertTitle: 'Not a Medical Diagnosis', alertDescription: 'The information provided here is for general knowledge only and does not substitute professional medical advice. Always consult a qualified healthcare provider for diagnosis and treatment.' },
+            filter: { label: 'Filter by', symptomPlaceholder: 'Select Symptom', allSymptoms: 'All Symptoms', severityPlaceholder: 'Select Severity', allSeverities: 'All Severities', noResults: 'No conditions match the selected filters.' },
+            card: { symptomsLabel: 'Symptoms', causesLabel: 'Causes', cureTreatmentLabel: 'Care / Treatment', dosLabel: 'Do\'s', dontsLabel: 'Don\'ts' },
+            severities: { mild: 'Mild', moderate: 'Moderate', severe: 'Severe', varies: 'Varies' },
+            symptoms: { // Add symptom translations (can be same as key if no translation)
+                Pimples: "Pimples", Blackheads: "Blackheads", Whiteheads: "Whiteheads", Cysts: "Cysts", OilySkin: "Oily Skin",
+                DrySkin: "Dry Skin", Itching: "Itching", Redness: "Redness", Inflammation: "Inflammation", Blisters: "Blisters", OozingCrusting: "Oozing/Crusting",
+                RedPatches: "Red Patches", SilveryScales: "Silvery Scales", JointPain: "Joint Pain (sometimes)",
+                WhitePatches: "White Patches", LossofSkinColor: "Loss of Skin Color", HairWhitening: "Hair Whitening",
+                NewMole: "New Mole", ChangingMole: "Changing Mole", Asymmetry: "Asymmetry", IrregularBorder: "Irregular Border", ColorVariation: "Color Variation", Diameter6mm: "Diameter >6mm", Evolving: "Evolving",
+                FacialRedness: "Facial Redness", Flushing: "Flushing", VisibleBloodVessels: "Visible Blood Vessels", BumpsPimples: "Bumps/Pimples", EyeIrritation: "Eye Irritation",
+                Flaking: "Flaking", YellowishScales: "Yellowish Scales", RedSkin: "Red Skin", Dandruffonscalp: "Dandruff (on scalp)",
+                RoughPatch: "Rough Patch", ScalyPatch: "Scaly Patch", SunExposedAreas: "Sun-Exposed Areas",
+                RedRash: "Red Rash", DefinedBorderssometimes: "Defined Borders (sometimes)",
+                RaisedWelts: "Raised Welts", ItchyWeltsWheals: "Itchy Welts (Wheals)", SuddenOnset: "Sudden Onset",
+            },
+            conditions: { // Add condition-specific translations
+                AcneVulgaris: { name: "Acne Vulgaris", causes: skinConditionsData[0].causes, cureTreatment: skinConditionsData[0].cureTreatment, dos: skinConditionsData[0].dos, donts: skinConditionsData[0].donts },
+                EczemaAtopicDermatitis: { name: "Eczema (Atopic Dermatitis)", causes: skinConditionsData[1].causes, cureTreatment: skinConditionsData[1].cureTreatment, dos: skinConditionsData[1].dos, donts: skinConditionsData[1].donts },
+                Psoriasis: { name: "Psoriasis", causes: skinConditionsData[2].causes, cureTreatment: skinConditionsData[2].cureTreatment, dos: skinConditionsData[2].dos, donts: skinConditionsData[2].donts },
+                Vitiligo: { name: "Vitiligo", causes: skinConditionsData[3].causes, cureTreatment: skinConditionsData[3].cureTreatment, dos: skinConditionsData[3].dos, donts: skinConditionsData[3].donts },
+                Melanoma: { name: "Melanoma", causes: skinConditionsData[4].causes, cureTreatment: skinConditionsData[4].cureTreatment, dos: skinConditionsData[4].dos, donts: skinConditionsData[4].donts },
+                Rosacea: { name: "Rosacea", causes: skinConditionsData[5].causes, cureTreatment: skinConditionsData[5].cureTreatment, dos: skinConditionsData[5].dos, donts: skinConditionsData[5].donts },
+                SeborrheicDermatitis: { name: "Seborrheic Dermatitis", causes: skinConditionsData[6].causes, cureTreatment: skinConditionsData[6].cureTreatment, dos: skinConditionsData[6].dos, donts: skinConditionsData[6].donts },
+                ActinicKeratosisAK: { name: "Actinic Keratosis (AK)", causes: skinConditionsData[7].causes, cureTreatment: skinConditionsData[7].cureTreatment, dos: skinConditionsData[7].dos, donts: skinConditionsData[7].donts },
+                ContactDermatitis: { name: "Contact Dermatitis", causes: skinConditionsData[8].causes, cureTreatment: skinConditionsData[8].cureTreatment, dos: skinConditionsData[8].dos, donts: skinConditionsData[8].donts },
+                HivesUrticaria: { name: "Hives (Urticaria)", causes: skinConditionsData[9].causes, cureTreatment: skinConditionsData[9].cureTreatment, dos: skinConditionsData[9].dos, donts: skinConditionsData[9].donts },
+            },
+             footer: { brand: 'SkinSeva', rights: 'All Rights Reserved', disclaimer: 'Disclaimer: This tool is for informational purposes only and does not provide medical advice.', privacy: 'Privacy Policy', terms: 'Terms of Service', contact: 'Contact Us' }
+        };
+        try {
+            keyParts.forEach(part => {
+                currentVal = currentVal[part];
+            });
+        } catch (e) { return key; } // Fallback to key if path is invalid
+        return typeof currentVal === 'string' ? currentVal : key;
+    };
+    // const t = useTranslations('SkinInfoPage'); // Use this line if next-intl is configured
+
     const [symptomFilter, setSymptomFilter] = useState<string>('all');
     const [severityFilter, setSeverityFilter] = useState<string>('all');
 
     // --- Get unique symptoms for filter dropdown ---
-    // Use translations for symptoms if available, otherwise use the hardcoded symptom strings
     const allSymptoms = useMemo(() => {
         const symptomsSet = new Set<string>();
         skinConditionsData.forEach(condition => {
             condition.symptoms.forEach(symptom => {
-                // Try to get translated symptom, fallback to original
-                try {
-                    symptomsSet.add(t(`symptoms.${symptom.replace(/[^a-zA-Z0-9]/g, '')}`) || symptom);
-                } catch (e) {
-                    symptomsSet.add(symptom); // Fallback if translation key is missing
-                }
+                // Remove special chars for key lookup, fallback to original symptom
+                const symptomKey = `symptoms.${symptom.replace(/[^a-zA-Z0-9]/g, '')}`;
+                symptomsSet.add(t(symptomKey) || symptom);
             });
         });
         return Array.from(symptomsSet).sort();
-    }, [t]); // Add t to dependency array
+    }, [t]); // Added t to dependency array
 
     // --- Get unique severities for filter dropdown ---
-     // Use translations for severities if available
     const allSeverities = useMemo(() => {
         const severitiesSet = new Set<string>();
         skinConditionsData.forEach(condition => {
-            try {
-                 severitiesSet.add(t(`severities.${condition.severity.toLowerCase()}`) || condition.severity);
-            } catch (e) {
-                 severitiesSet.add(condition.severity); // Fallback
-            }
+            const severityKey = `severities.${condition.severity.toLowerCase()}`;
+            severitiesSet.add(t(severityKey) || condition.severity);
         });
-        return Array.from(severitiesSet).sort((a, b) => { // Custom sort order might need adjustment based on translated values
-            // Simplified sort for example, adjust as needed for translated terms
-            const order = { [t('severities.mild')]: 1, [t('severities.moderate')]: 2, [t('severities.varies')]: 3, [t('severities.severe')]: 4 };
-             // Handle potential missing translations in sorting
-            const orderA = order[a] ?? (a.toLowerCase().includes('mild') ? 1 : a.toLowerCase().includes('moderate') ? 2 : a.toLowerCase().includes('severe') ? 4 : 99);
-            const orderB = order[b] ?? (b.toLowerCase().includes('mild') ? 1 : b.toLowerCase().includes('moderate') ? 2 : b.toLowerCase().includes('severe') ? 4 : 99);
-            return orderA - orderB;
+        // Custom sort order based on translated values
+        const order = { [t('severities.mild')]: 1, [t('severities.moderate')]: 2, [t('severities.varies')]: 3, [t('severities.severe')]: 4 };
+        return Array.from(severitiesSet).sort((a, b) => {
+             const orderA = order[a] ?? 99; // Assign a high number if not found
+             const orderB = order[b] ?? 99;
+             return orderA - orderB;
         });
-    }, [t]); // Add t to dependency array
+    }, [t]); // Added t to dependency array
 
     // --- Filtered conditions based on selected filters ---
     const filteredConditions = useMemo(() => {
         return skinConditionsData.filter(condition => {
-             // Match against original or translated symptoms
-             const symptomMatch = symptomFilter === 'all' || condition.symptoms.some(symptom => {
-                 const translatedSymptom = t(`symptoms.${symptom.replace(/[^a-zA-Z0-9]/g, '')}`) || symptom;
+            const symptomMatch = symptomFilter === 'all' || condition.symptoms.some(symptom => {
+                 const symptomKey = `symptoms.${symptom.replace(/[^a-zA-Z0-9]/g, '')}`;
+                 const translatedSymptom = t(symptomKey) || symptom;
                  return translatedSymptom.toLowerCase() === symptomFilter.toLowerCase();
              });
-            // Match against original or translated severity
-            const translatedSeverity = t(`severities.${condition.severity.toLowerCase()}`) || condition.severity;
+
+            const severityKey = `severities.${condition.severity.toLowerCase()}`;
+            const translatedSeverity = t(severityKey) || condition.severity;
             const severityMatch = severityFilter === 'all' || translatedSeverity.toLowerCase() === severityFilter.toLowerCase();
 
             return symptomMatch && severityMatch;
         });
-    }, [symptomFilter, severityFilter, t]); // Add t to dependency array
+    }, [symptomFilter, severityFilter, t]); // Added t to dependency array
 
 
   return (
@@ -286,13 +323,17 @@ export default function SkinInfoPage() {
           {filteredConditions.length > 0 ? (
               filteredConditions.map((condition) => {
                    // Attempt to get translated texts, fallback to original
-                  const conditionName = t(`conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}.name`) || condition.name;
-                  const conditionCauses = t(`conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}.causes`) || condition.causes;
-                  const conditionCure = t(`conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}.cureTreatment`) || condition.cureTreatment;
-                   const translatedSymptoms = condition.symptoms.map(s => t(`symptoms.${s.replace(/[^a-zA-Z0-9]/g, '')}`) || s).join(', ');
+                   const conditionKeyBase = `conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+                  const conditionName = t(`${conditionKeyBase}.name`) || condition.name;
+                  const conditionCauses = t(`${conditionKeyBase}.causes`) || condition.causes;
+                  const conditionCure = t(`${conditionKeyBase}.cureTreatment`) || condition.cureTreatment;
+                   const translatedSymptoms = condition.symptoms.map(s => {
+                       const symptomKey = `symptoms.${s.replace(/[^a-zA-Z0-9]/g, '')}`;
+                       return t(symptomKey) || s;
+                    }).join(', ');
                    const translatedSeverity = t(`severities.${condition.severity.toLowerCase()}`) || condition.severity;
-                   const translatedDos = condition.dos.map((item, index) => t(`conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}.dos.${index}`) || item);
-                   const translatedDonts = condition.donts.map((item, index) => t(`conditions.${condition.name.replace(/[^a-zA-Z0-9]/g, '')}.donts.${index}`) || item);
+                   const translatedDos = condition.dos.map((item, index) => t(`${conditionKeyBase}.dos.${index}`) || item);
+                   const translatedDonts = condition.donts.map((item, index) => t(`${conditionKeyBase}.donts.${index}`) || item);
 
                   return (
                         <Card key={condition.id} className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
@@ -361,3 +402,5 @@ export default function SkinInfoPage() {
     </div>
   );
 }
+
+    
