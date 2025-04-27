@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Globe, IndianRupee, Hospital, Building, X } from 'lucide-react'; // Added Hospital, Building icons
-import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
+import { MapPin, Globe, IndianRupee, Hospital, Building, X, ExternalLink } from 'lucide-react'; // Added ExternalLink
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define the structure for clinic data
 export interface ClinicInfo {
@@ -20,6 +20,8 @@ export interface ClinicInfo {
   schemes: string[]; // e.g., ["PMJAY", "State Health Scheme"]
   isGovernment: boolean; // To prioritize government clinics
   website?: string; // Optional website link
+  lat?: number; // Optional latitude for directions
+  lon?: number; // Optional longitude for directions
 }
 
 interface ClinicResultsModalProps {
@@ -32,23 +34,29 @@ interface ClinicResultsModalProps {
 
 export function ClinicResultsModal({ isOpen, onClose, clinics, loading, error }: ClinicResultsModalProps) {
 
-  // Sort clinics to prioritize government ones
+  // Sort clinics: Govt first, then by distance
   const sortedClinics = React.useMemo(() => {
     if (!clinics) return [];
     return [...clinics].sort((a, b) => {
-      // Sort by government status first (true comes before false)
       if (a.isGovernment !== b.isGovernment) {
-        return a.isGovernment ? -1 : 1;
+        return a.isGovernment ? -1 : 1; // Govt clinics first
       }
-      // Then sort by distance (assuming distance is like "X km", convert to number)
       const distA = parseFloat(a.distance);
       const distB = parseFloat(b.distance);
       if (!isNaN(distA) && !isNaN(distB)) {
-        return distA - distB;
+        return distA - distB; // Then sort by distance
       }
-      return 0; // Fallback if distance parsing fails
+      return 0;
     });
   }, [clinics]);
+
+  const getDirectionsUrl = (clinic: ClinicInfo) => {
+      if (clinic.lat && clinic.lon) {
+          return `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lon}`;
+      }
+      // Fallback to searching by name and address if lat/lon missing
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinic.name + ', ' + clinic.address)}`;
+  }
 
 
   return (
@@ -98,45 +106,54 @@ export function ClinicResultsModal({ isOpen, onClose, clinics, loading, error }:
               {sortedClinics.map((clinic) => (
                 <Card key={clinic.id} className="shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
-                     <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                           {clinic.isGovernment ? <Hospital className="h-5 w-5 text-blue-600 dark:text-blue-400" /> : <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />}
-                           {clinic.name}
-                        </CardTitle>
+                     <div className="flex justify-between items-start gap-2">
+                        <div className="flex-grow">
+                            <CardTitle className="text-lg flex items-center gap-2 mb-1">
+                               {clinic.isGovernment ? <Hospital className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" /> : <Building className="h-5 w-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />}
+                               <span>{clinic.name}</span>
+                            </CardTitle>
+                            <CardDescription className="text-xs flex items-center gap-1 pt-1">
+                              <MapPin className="h-3 w-3 flex-shrink-0"/> <span>{clinic.address}</span>
+                            </CardDescription>
+                        </div>
                         {clinic.isGovernment && (
-                           <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                               Government
+                           <Badge variant="secondary" className="ml-2 flex-shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                               Govt.
                            </Badge>
                         )}
                      </div>
-                     <CardDescription className="text-xs flex items-center gap-1 pt-1">
-                       <MapPin className="h-3 w-3"/> {clinic.address}
-                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-sm space-y-2">
+                  <CardContent className="text-sm space-y-2 pt-0">
                      <div className="flex justify-between items-center text-xs">
-                       <span className="font-medium">Distance:</span>
-                       <span>{clinic.distance}</span>
+                       <span className="font-medium text-muted-foreground">Distance:</span>
+                       <span className="font-semibold">{clinic.distance}</span>
                      </div>
                      <div className="flex justify-between items-center text-xs">
-                       <span className="font-medium flex items-center gap-1"><IndianRupee className="h-3 w-3"/> Est. Cost:</span>
-                       <span>{clinic.estimatedCost}</span>
+                       <span className="font-medium text-muted-foreground flex items-center gap-1"><IndianRupee className="h-3 w-3"/> Est. Cost:</span>
+                       <span className="text-right">{clinic.estimatedCost}</span>
                      </div>
                      {clinic.schemes.length > 0 && (
                        <div className="text-xs">
-                         <span className="font-medium">Schemes: </span>
+                         <span className="font-medium text-muted-foreground">Schemes: </span>
                          {clinic.schemes.map(scheme => (
-                           <Badge key={scheme} variant="outline" className="mr-1 text-xs">{scheme}</Badge>
+                           <Badge key={scheme} variant="outline" className="mr-1 text-xs font-normal">{scheme}</Badge>
                          ))}
                        </div>
                      )}
-                     {clinic.website && (
+                     <div className="flex justify-between items-center mt-2">
+                        {clinic.website && (
+                             <Button variant="link" size="sm" asChild className="text-xs p-0 h-auto">
+                               <a href={clinic.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                 <Globe className="h-3 w-3" /> Visit Website
+                               </a>
+                             </Button>
+                         )}
                          <Button variant="link" size="sm" asChild className="text-xs p-0 h-auto">
-                           <a href={clinic.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-                             <Globe className="h-3 w-3" /> Visit Website
-                           </a>
+                            <a href={getDirectionsUrl(clinic)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                                <ExternalLink className="h-3 w-3" /> Get Directions
+                            </a>
                          </Button>
-                     )}
+                     </div>
                   </CardContent>
                 </Card>
               ))}
@@ -148,13 +165,8 @@ export function ClinicResultsModal({ isOpen, onClose, clinics, loading, error }:
                 Close
               </Button>
          </DialogClose>
-
-         {/* Close button for accessibility/fallback */}
-         {/* <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-             <X className="h-4 w-4" />
-             <span className="sr-only">Close</span>
-         </DialogClose> */}
       </DialogContent>
     </Dialog>
   );
 }
+

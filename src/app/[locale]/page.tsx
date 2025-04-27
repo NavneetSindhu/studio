@@ -1,21 +1,23 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { classifyImage, ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
+import { chatWithBot, ChatInput, ChatOutput } from "@/ai/flows/chat-flow"; // Import chat flow
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2 } from "lucide-react"; // Added MessageSquare, Loader2
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { QuestionnaireModal } from "@/components/QuestionnaireModal";
-import { ThemeToggle } from "@/components/ThemeToggle"; // Import ThemeToggle
-import { LanguageToggle } from "@/components/LanguageToggle"; // Import LanguageToggle
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal"; // Import ClinicResultsModal
+import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal";
 
 // Placeholder skin conditions data (replace with actual data structure if needed)
 const skinConditions = [
@@ -25,6 +27,32 @@ const skinConditions = [
     { name: "Vitiligo", description: "Loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
     { name: "Melanoma", description: "Serious skin cancer; unusual moles.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
 ];
+
+// Define the diseases for the scrolling list
+const scrollingDiseaseList = [
+  "Acne", "Eczema", "Psoriasis", "Melanoma", "Rosacea",
+  "Dermatitis", "Hives", "Ringworm", "Cellulitis", "Seborrheic Dermatitis"
+];
+
+// --- Scrolling Disease List Component ---
+function ScrollingDiseaseList() {
+    // Duplicate the list for seamless looping
+    const extendedList = [...scrollingDiseaseList, ...scrollingDiseaseList];
+
+    return (
+        <div className="w-full overflow-hidden bg-secondary/50 py-3 my-12 relative border-y border-border">
+            <div className="animate-scrollRightToLeft flex whitespace-nowrap">
+                {extendedList.map((disease, index) => (
+                    <span key={index} className="mx-4 text-sm text-muted-foreground font-medium">
+                        {disease}
+                    </span>
+                ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background pointer-events-none"></div> {/* Fades */}
+        </div>
+    );
+}
+
 
 // --- Image Upload Component ---
 function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageUpload: (file: File | null) => void; loading: boolean; currentImagePreview: string | null }) {
@@ -47,7 +75,7 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
       setError("File is too large! Maximum size is 5MB.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       onImageUpload(null);
@@ -102,7 +130,6 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
           className="hidden"
           aria-hidden="true"
         />
-        {/* Analyze button moved outside this component */}
       </CardContent>
     </Card>
   );
@@ -118,11 +145,7 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
             <CardDescription>Please wait while the AI processes your information.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center space-y-4 p-6">
-             {/* Simple spinner or progress indicator */}
-             <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-             </svg>
+             <Loader2 className="animate-spin h-8 w-8 text-primary" />
             <p className="text-sm text-muted-foreground">This may take a moment...</p>
           </CardContent>
         </Card>
@@ -217,53 +240,70 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
 // --- Chatbot Component ---
 function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([
+    const [messages, setMessages] = useState<Array<{ text: string; sender: 'user' | 'bot' }>>([
         { text: "Hello! How can I help you with your skin concerns today?", sender: "bot" }
     ]);
     const [newMessage, setNewMessage] = useState("");
+    const [isBotTyping, setIsBotTyping] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for scrolling
 
     const toggleChat = () => {
         setIsOpen(!isOpen);
     };
 
-    const handleSendMessage = () => {
-        if (newMessage.trim() !== "") {
+    // Scroll to bottom of chat messages
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom(); // Scroll whenever messages change
+    }, [messages]);
+
+    const handleSendMessage = async () => {
+        if (newMessage.trim() !== "" && !isBotTyping) {
             const userMessage = { text: newMessage, sender: "user" as const };
             setMessages(prev => [...prev, userMessage]);
-
-            // Basic bot response (replace with actual AI logic)
-            setTimeout(() => {
-                 const botResponse = { text: "Thanks for your question! This chatbot is currently under development for informational purposes. Please use the main analysis features or consult a doctor for medical advice.", sender: "bot" as const };
-                 setMessages(prev => [...prev, botResponse]);
-            }, 500);
             setNewMessage("");
+            setIsBotTyping(true);
+
+            try {
+                const chatInput: ChatInput = { message: newMessage, history: messages }; // Include history
+                const botResponse: ChatOutput = await chatWithBot(chatInput);
+                const botMessage = { text: botResponse.response, sender: "bot" as const };
+                setMessages(prev => [...prev, botMessage]);
+            } catch (error) {
+                console.error("Error calling chatbot flow:", error);
+                const errorMessage = { text: "Sorry, I encountered an error. Please try again.", sender: "bot" as const };
+                setMessages(prev => [...prev, errorMessage]);
+            } finally {
+                setIsBotTyping(false);
+            }
         }
     };
 
     return (
         <div className="fixed bottom-4 right-4 z-50">
             {!isOpen ? (
-                <Button size="icon" onClick={toggleChat} className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
-                   <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
-                      <AvatarFallback>AI</AvatarFallback>
-                   </Avatar>
+                <Button size="lg" onClick={toggleChat} className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg pl-4 pr-5 py-6">
+                   <MessageSquare className="h-5 w-5 mr-2" />
+                   <span>Chat</span>
                 </Button>
             ) : (
-                <Card className="w-80 shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between p-3 border-b">
+                <Card className="w-80 shadow-lg flex flex-col max-h-[60vh]">
+                    <CardHeader className="flex flex-row items-center justify-between p-3 border-b flex-shrink-0">
                          <div className="flex items-center space-x-2">
                             <Avatar className="h-6 w-6">
                                <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
                                <AvatarFallback>AI</AvatarFallback>
                             </Avatar>
-                             <CardTitle className="text-sm font-semibold">SkinDeep AI Assistant</CardTitle>
+                             <CardTitle className="text-sm font-semibold">SkinSeva AI Assistant</CardTitle>
                          </div>
                         <Button size="icon" variant="ghost" onClick={toggleChat} className="h-6 w-6">
                             <XCircle className="h-4 w-4" />
                         </Button>
                     </CardHeader>
-                    <CardContent className="h-64 overflow-y-auto p-3 space-y-2">
+                    <CardContent className="flex-grow overflow-y-auto p-3 space-y-2">
                         {messages.map((message, index) => (
                             <div key={index} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
                                 <span className={cn("inline-block p-2 rounded-lg text-xs max-w-[80%]",
@@ -272,17 +312,28 @@ function Chatbot() {
                                 </span>
                             </div>
                         ))}
+                        {isBotTyping && (
+                             <div className="flex justify-start">
+                                <span className="inline-block p-2 rounded-lg text-xs max-w-[80%] bg-secondary text-secondary-foreground rounded-bl-none">
+                                    <Loader2 className="h-3 w-3 animate-spin inline-block mr-1" /> Typing...
+                                </span>
+                             </div>
+                        )}
+                        <div ref={messagesEndRef} /> {/* Element to scroll to */}
                     </CardContent>
-                    <div className="p-2 flex space-x-2 border-t">
+                    <div className="p-2 flex space-x-2 border-t flex-shrink-0">
                         <Input
                             type="text"
                             placeholder="Ask a question..."
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !isBotTyping) handleSendMessage(); }}
                             className="h-8 text-xs"
+                            disabled={isBotTyping}
                         />
-                        <Button onClick={handleSendMessage} size="sm" className="h-8">Send</Button>
+                        <Button onClick={handleSendMessage} size="sm" className="h-8" disabled={isBotTyping}>
+                             {isBotTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
+                        </Button>
                     </div>
                 </Card>
             )}
@@ -303,7 +354,6 @@ export default function Home() {
   const [clinicLoading, setClinicLoading] = useState(false);
   const [clinicError, setClinicError] = useState<string | null>(null);
 
-
   const uploadSectionRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
 
@@ -316,7 +366,6 @@ export default function Home() {
               setImagePreview(reader.result as string);
           };
           reader.readAsDataURL(file);
-           // Reset result when new image is selected
            setResult(null);
            setApiError(null);
       } else {
@@ -332,7 +381,6 @@ export default function Home() {
         title: "Assessment Saved",
         description: "Your assessment details have been recorded.",
     });
-    // Reset result when questionnaire is updated
     setResult(null);
     setApiError(null);
   };
@@ -363,26 +411,55 @@ export default function Home() {
     setResult(null);
 
     try {
-        // Convert image file to data URI
         const reader = new FileReader();
         reader.readAsDataURL(selectedFile);
         reader.onload = async () => {
             const imageUri = reader.result as string;
-            console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData });
+
+            // **Simulated** Image Quality Checks (Replace with actual logic if available)
+            // For now, we assume the image is clear and contains skin.
+            // In a real scenario, you might use a separate function or API call here.
+            const isClearImage = true; // Placeholder
+            const hasHumanSkinContent = true; // Placeholder
+
+            console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData, isClear: isClearImage, hasHumanSkin: hasHumanSkinContent });
+
+            if (!isClearImage || !hasHumanSkinContent) {
+                setApiError("Image error. Upload clear human skin image.");
+                setLoading(false);
+                 toast({
+                    variant: "destructive",
+                    title: "Image Quality Issue",
+                    description: "Image error. Upload clear human skin image.",
+                  });
+                return;
+            }
+
             try {
                 const apiResult = await classifyImage({
                     imageUri: imageUri,
-                    questionnaireData: questionnaireData || undefined, // Pass questionnaire data or undefined
+                    questionnaireData: questionnaireData || undefined,
+                    isClear: isClearImage,
+                    hasHumanSkin: hasHumanSkinContent,
                 });
                 console.log("API Response:", apiResult);
 
                  if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
-                     setResult(apiResult);
-                     console.log("Classification successful:", apiResult);
-                     // Scroll to results smoothly
-                      const resultElement = document.getElementById('result-section');
-                      resultElement?.scrollIntoView({ behavior: "smooth", block: "center" });
-
+                     // Check for specific error messages from the flow
+                     if (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin")) {
+                         setApiError(apiResult.predictedDisease);
+                         setResult(null);
+                          toast({
+                            variant: "destructive",
+                            title: "Analysis Issue",
+                            description: apiResult.predictedDisease,
+                           });
+                     } else {
+                         setResult(apiResult);
+                         console.log("Classification successful:", apiResult);
+                         const resultElement = document.getElementById('result-section');
+                         resultElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+                     }
                  } else {
                      console.error("Invalid API response structure:", apiResult);
                      setApiError("Received an unexpected result from the analysis service.");
@@ -393,7 +470,6 @@ export default function Home() {
                  console.error("Error during classifyImage API call:", innerError);
                  let errorMessage = "Failed to classify the image due to an unexpected error.";
                  if (innerError instanceof Error) {
-                      // Try to provide a more user-friendly message for common errors
                       if (innerError.message.includes('deadline')) {
                           errorMessage = "Analysis timed out. The server might be busy. Please try again.";
                       } else if (innerError.message.includes('output')) {
@@ -426,7 +502,6 @@ export default function Home() {
         };
 
     } catch (error) {
-      // Catch potential errors before file reading starts (less likely here)
       console.error("Error preparing analysis:", error);
       setApiError("An error occurred before starting the analysis.");
       setLoading(false);
@@ -439,7 +514,7 @@ export default function Home() {
   };
 
 
-   // --- Find Clinics Logic (Updated for Modal) ---
+   // --- Find Clinics Logic ---
    const handleFindClinics = () => {
      setClinicLoading(true);
      setClinicError(null);
@@ -457,29 +532,23 @@ export default function Home() {
              description: "Searching for nearby clinics...",
            });
 
-           // --- Placeholder API Call ---
-           // Replace this with your actual API call to fetch clinic data
            try {
-              // Simulate network delay
-              await new Promise(resolve => setTimeout(resolve, 1500));
+              await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
-               // *** Replace with ACTUAL API call logic ***
-               // const response = await fetch(`/api/find-clinics?lat=${latitude}&lon=${longitude}`);
-               // if (!response.ok) {
-               //   throw new Error('Failed to fetch clinic data');
-               // }
-               // const fetchedClinics: ClinicInfo[] = await response.json();
-
-              // --- START Placeholder Data ---
-               const fetchedClinics: ClinicInfo[] = [
-                   { id: '1', name: 'District General Hospital - Dermatology Dept.', address: '123 Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in' },
-                   { id: '2', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true },
-                   { id: '3', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com'},
-                   { id: '4', name: 'Urban Primary Health Centre (UPHC)', address: '90 Sector 5, Urban Area', distance: '5.1 km', estimatedCost: 'Free / Minimal Fee (Govt.)', schemes: ['PMJAY Lite'], isGovernment: true },
-                   { id: '5', name: 'Apollo Skin Care Center', address: '101 Apollo Ave, Mall Road', distance: '6.8 km', estimatedCost: '₹1200+ Consultation', schemes: [], isGovernment: false },
+               const fetchedClinics: ClinicInfo[] = [ // Placeholder Data
+                   { id: '1', name: 'District General Hospital - Dermatology Dept.', address: '123 Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in', lat: latitude + 0.01, lon: longitude + 0.01 },
+                   { id: '2', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com', lat: latitude - 0.02, lon: longitude - 0.01},
+                   { id: '3', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true, lat: latitude + 0.005, lon: longitude - 0.015 },
+                   { id: '4', name: 'Urban Primary Health Centre (UPHC)', address: '90 Sector 5, Urban Area', distance: '5.1 km', estimatedCost: 'Free / Minimal Fee (Govt.)', schemes: ['PMJAY Lite'], isGovernment: true, lat: latitude - 0.01, lon: longitude + 0.02 },
+                   { id: '5', name: 'Apollo Skin Care Center', address: '101 Apollo Ave, Mall Road', distance: '6.8 km', estimatedCost: '₹1200+ Consultation', schemes: [], isGovernment: false, lat: latitude + 0.03, lon: longitude },
                ];
-              // --- END Placeholder Data ---
 
+               fetchedClinics.sort((a, b) => {
+                   if (a.isGovernment !== b.isGovernment) return a.isGovernment ? -1 : 1;
+                   const distanceA = parseFloat(a.distance);
+                   const distanceB = parseFloat(b.distance);
+                   return (isNaN(distanceA) || isNaN(distanceB)) ? 0 : distanceA - distanceB;
+               });
 
                setClinicData(fetchedClinics);
                setClinicLoading(false);
@@ -494,9 +563,6 @@ export default function Home() {
                    description: "Could not retrieve clinic information.",
                });
            }
-           // Note: Google Maps link opening is removed as results are shown in modal
-           // const mapsUrl = `https://www.google.com/maps/search/government+dermatologist+clinic+near+${latitude},${longitude}`;
-           // window.open(mapsUrl, '_blank');
          },
          (error) => {
            console.error("Error getting location:", error);
@@ -516,7 +582,7 @@ export default function Home() {
              description: message,
            });
          },
-         { timeout: 10000 } // Set timeout for location request
+         { timeout: 10000 }
        );
      } else {
        console.error("Geolocation is not supported by this browser.");
@@ -532,19 +598,19 @@ export default function Home() {
 
 
   const scrollToUpload = () => {
-    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); // Changed to start for better visibility
+    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
-      {/* Enhanced Top Navigation Bar */}
+      {/* Navigation Bar */}
       <nav className="w-full py-2 bg-card shadow-sm sticky top-0 z-50 border-b">
         <div className="container mx-auto flex items-center justify-between px-4">
            <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-primary hover:opacity-90 transition-opacity">
              <HeartPulse className="h-6 w-6" />
              <span>SkinSeva</span>
           </Link>
-           <span className="text-muted-foreground text-sm">स्वस्थ जीवन सुखी जीवन</span>
+           <span className="text-muted-foreground text-sm hidden md:inline">स्वस्थ जीवन सुखी जीवन</span>
           <div className="flex items-center space-x-1 md:space-x-2">
               <Button variant="ghost" asChild size="sm">
                  <Link href="/" className="text-sm">Home</Link>
@@ -568,14 +634,12 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-       <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-primary/70 via-primary/50 to-secondary/60 dark:from-primary/50 dark:via-primary/40 dark:to-secondary/40 text-white px-4">
-         {/* Optional subtle background pattern */}
-         <div className="absolute inset-0 opacity-10 bg-[url('/hero-background.svg')] bg-cover bg-center"></div> {/* Example using SVG background */}
+       <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-primary/70 via-primary/50 to-secondary/60 dark:from-primary/50 dark:via-primary/40 dark:to-secondary/40 text-white px-4 overflow-hidden">
+         <div className="absolute inset-0 opacity-10 bg-[url('/hero-background.svg')] bg-cover bg-center"></div>
          <div className="relative z-10 max-w-4xl mx-auto">
            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-primary-foreground drop-shadow-lg">Understand Your Skin Better with AI</h1>
            <p className="text-lg md:text-xl lg:text-2xl mb-8 text-primary-foreground/90 drop-shadow-md max-w-2xl mx-auto">Get a preliminary analysis by answering questions or uploading an image.</p>
            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              {/* Pass the submission handler to the modal */}
               <QuestionnaireModal onSave={handleQuestionnaireSubmit}>
                  <Button size="lg" variant="secondary" className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-8 py-3 text-lg shadow-lg transition-all duration-300 transform hover:scale-105">
                     <ListChecks className="mr-2 h-5 w-5"/>
@@ -590,7 +654,10 @@ export default function Home() {
          </div>
        </section>
 
-      {/* Categories Section - Simplified */}
+       {/* Scrolling Disease List */}
+       <ScrollingDiseaseList />
+
+      {/* Categories Section */}
       <section id="conditions" className="container mx-auto py-16 px-4">
         <h2 className="text-3xl font-semibold text-center mb-4">Common Conditions We Analyze</h2>
          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
@@ -612,7 +679,6 @@ export default function Home() {
                 <ImageUpload onImageUpload={handleFileSelect} loading={loading} currentImagePreview={imagePreview} />
            </div>
 
-            {/* Display questionnaire summary if data exists */}
             {questionnaireData && (
                  <Card className="mb-6 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800">
                     <CardHeader className="p-3">
@@ -620,8 +686,6 @@ export default function Home() {
                      </CardHeader>
                     <CardContent className="p-3 pt-0">
                          <p className="text-xs text-blue-700 dark:text-blue-400">Age: {questionnaireData.age ?? 'N/A'} | Gender: {questionnaireData.gender ?? 'N/A'} | Symptom: {questionnaireData.symptoms ?? 'N/A'}</p>
-                         {/* Optionally add more fields */}
-                         {/* <p className="text-xs text-blue-700 dark:text-blue-400">Complexion: {questionnaireData.complexion ?? 'N/A'} | Products: {questionnaireData.products ? 'Yes' : 'No'}</p> */}
                      </CardContent>
                  </Card>
              )}
@@ -630,26 +694,23 @@ export default function Home() {
             <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
                 {loading ? (
                     <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
                         Analyzing...
                     </>
                 ) : 'Analyze Now'}
             </Button>
 
-           <div id="result-section"> {/* Add ID for scrolling */}
+           <div id="result-section">
                 <ResultDisplay result={result} loading={loading && !apiError} apiError={apiError} onFindClinics={handleFindClinics} />
            </div>
         </div>
       </section>
 
 
-      {/* Educational Section (Simplified) */}
+      {/* Educational Section */}
        <section className="w-full bg-secondary dark:bg-secondary/50 py-16">
          <div className="container mx-auto px-4 text-center">
-             <h2 className="text-3xl font-semibold mb-4">Why Use SkinDeep AI?</h2>
+             <h2 className="text-3xl font-semibold mb-4">Why Use SkinSeva AI?</h2>
              <p className="text-muted-foreground max-w-3xl mx-auto mb-10">Gain preliminary insights and awareness about potential skin conditions. Remember to consult a professional.</p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                <Card className="bg-card shadow-md text-left p-6 rounded-lg">
@@ -678,13 +739,13 @@ export default function Home() {
           <div className="flex space-x-4">
             <Link href="/privacy" className="hover:text-primary text-xs">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-primary text-xs">Terms of Service</Link>
-            <Link href="mailto:support@skindeepai.example.com" className="hover:text-primary text-xs">Contact Us</Link>
+            <Link href="mailto:support@skinseva.example.com" className="hover:text-primary text-xs">Contact Us</Link>
           </div>
         </div>
       </footer>
+
        <Chatbot />
 
-        {/* Clinic Results Modal */}
        <ClinicResultsModal
           isOpen={isClinicModalOpen}
           onClose={() => setIsClinicModalOpen(false)}
