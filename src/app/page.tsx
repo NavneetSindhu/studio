@@ -9,15 +9,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
 
 const skinConditions = [
-  { name: "Melanocytic nevi (nv)", icon: "" },
-  { name: "Melanoma (mel)", icon: "" },
-  { name: "Benign keratosis-like lesions (bkl)", icon: "" },
-  { name: "Basal cell carcinoma (bcc)", icon: "" },
-  { name: "Actinic keratoses (akiec)", icon: "" },
-  { name: "Vascular lesions (vasc)", icon: "" },
-  { name: "Dermatofibroma (df)", icon: "" },
+  { name: "Acne", description: "Inflammatory skin condition causing pimples and blackheads.", icon: "" },
+  { name: "Eczema", description: "Chronic condition causing itchy, inflamed skin.", icon: "" },
+  { name: "Psoriasis", description: "Skin disease causing red, scaly patches.", icon: "" },
+  { name: "Vitiligo", description: "Condition causing loss of skin color in patches.", icon: "" },
+  { name: "Melanoma", description: "The most serious type of skin cancer.", icon: "" },
 ];
 
 function ImageUpload({ onImageUpload }: { onImageUpload: (image: string) => void }) {
@@ -135,6 +134,13 @@ export default function Home() {
     }
   };
 
+  const scrollToUpload = () => {
+    const uploadSection = document.getElementById("upload");
+    if (uploadSection) {
+      uploadSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
       {/* Top Navigation Bar */}
@@ -157,7 +163,7 @@ export default function Home() {
         <div className="container mx-auto text-center relative z-10">
           <h1 className="text-5xl font-bold mb-4">Detect Skin Diseases Early with AI</h1>
           <p className="text-xl mb-8">Upload your face image and get instant disease analysis from our AI system.</p>
-          <Button className="bg-primary text-primary-foreground rounded-full px-8 py-3 text-lg">
+          <Button onClick={scrollToUpload} className="bg-primary text-primary-foreground rounded-full px-8 py-3 text-lg">
             <span>Upload Now</span> <span>➔</span>
           </Button>
         </div>
@@ -169,9 +175,13 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
           {skinConditions.map((condition) => (
             <Card key={condition.name} className="hover:shadow-lg transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle>{condition.name}</CardTitle>
+                <CardDescription>{condition.description}</CardDescription>
+              </CardHeader>
               <CardContent className="flex flex-col items-center justify-center p-4">
                 {condition.icon && <div className="mb-2">{condition.icon}</div>}
-                <a href="#upload" className="text-lg font-medium hover:text-primary">{condition.name}</a>
+                <Link href="#upload" className="text-lg font-medium hover:text-primary">Learn More</Link>
               </CardContent>
             </Card>
           ))}
