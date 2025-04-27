@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -15,6 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle"; // Import ThemeToggle
 import { LanguageToggle } from "@/components/LanguageToggle"; // Import LanguageToggle
 import { useToast } from "@/hooks/use-toast"; // Import useToast
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal"; // Import ClinicResultsModal
 
 // Placeholder skin conditions data (replace with actual data structure if needed)
 const skinConditions = [
@@ -26,7 +28,7 @@ const skinConditions = [
 ];
 
 // --- Image Upload Component ---
-function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageUpload: (file: File) => void; loading: boolean; currentImagePreview: string | null }) {
+function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageUpload: (file: File | null) => void; loading: boolean; currentImagePreview: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,21 +37,21 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
 
     if (!file) {
       setError(null);
-      onImageUpload(null as any); // Clear image if deselected
+      onImageUpload(null); // Clear image if deselected
       return;
     }
 
     if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
       setError("Invalid File! Please upload a valid face image (.jpg, .jpeg, .png).");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      onImageUpload(null as any);
+      onImageUpload(null);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       setError("File is too large! Maximum size is 5MB.");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      onImageUpload(null as any);
+      onImageUpload(null);
       return;
     }
 
@@ -155,8 +157,10 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
         );
     }
 
-  // Find the condition details based on the predicted disease name
-  const conditionDetails = skinConditions.find(c => c.name.toLowerCase() === result?.predictedDisease?.toLowerCase());
+  // Find the condition details based on the predicted disease name (case-insensitive check)
+  const predictedLower = result?.predictedDisease?.toLowerCase() ?? '';
+  const conditionDetails = skinConditions.find(c => c.name.toLowerCase() === predictedLower);
+
 
   return (
     <Card className="mt-6">
@@ -191,7 +195,7 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
                        <p className="text-foreground/80">{result.notes}</p>
                    </div>
                 )}
-               <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-300 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+               <Alert variant="warning" >
                   <AlertCircle className="h-4 w-4"/>
                   <AlertTitle className="font-semibold">Important Disclaimer</AlertTitle>
                   <AlertDescription>
@@ -225,10 +229,13 @@ function Chatbot() {
 
     const handleSendMessage = () => {
         if (newMessage.trim() !== "") {
-            setMessages([...messages, { text: newMessage, sender: "user" }]);
+            const userMessage = { text: newMessage, sender: "user" as const };
+            setMessages(prev => [...prev, userMessage]);
+
             // Basic bot response (replace with actual AI logic)
             setTimeout(() => {
-                setMessages([...messages, { text: "Thanks for your question! We are still under development and will provide feedback soon. If you require immediate assistance, please upload an image.", sender: "bot" }]);
+                 const botResponse = { text: "Thanks for your question! This chatbot is currently under development for informational purposes. Please use the main analysis features or consult a doctor for medical advice.", sender: "bot" as const };
+                 setMessages(prev => [...prev, botResponse]);
             }, 500);
             setNewMessage("");
         }
@@ -239,37 +246,44 @@ function Chatbot() {
             {!isOpen ? (
                 <Button size="icon" onClick={toggleChat} className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://picsum.photos/200/200" alt="Chatbot Avatar" />
+                      <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
                       <AvatarFallback>AI</AvatarFallback>
                    </Avatar>
                 </Button>
             ) : (
                 <Card className="w-80 shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>SkinDeep AI Assistant</CardTitle>
-                        <Button size="icon" variant="ghost" onClick={toggleChat}>
+                    <CardHeader className="flex flex-row items-center justify-between p-3 border-b">
+                         <div className="flex items-center space-x-2">
+                            <Avatar className="h-6 w-6">
+                               <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
+                               <AvatarFallback>AI</AvatarFallback>
+                            </Avatar>
+                             <CardTitle className="text-sm font-semibold">SkinDeep AI Assistant</CardTitle>
+                         </div>
+                        <Button size="icon" variant="ghost" onClick={toggleChat} className="h-6 w-6">
                             <XCircle className="h-4 w-4" />
                         </Button>
                     </CardHeader>
-                    <CardContent className="h-64 overflow-y-auto">
+                    <CardContent className="h-64 overflow-y-auto p-3 space-y-2">
                         {messages.map((message, index) => (
-                            <div key={index} className={message.sender === "user" ? "text-right" : "text-left"}>
-                                <span className={cn("inline-block p-2 rounded-lg text-sm", 
-                                    message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
+                            <div key={index} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+                                <span className={cn("inline-block p-2 rounded-lg text-xs max-w-[80%]",
+                                    message.sender === "user" ? "bg-primary text-primary-foreground rounded-br-none" : "bg-secondary text-secondary-foreground rounded-bl-none")}>
                                     {message.text}
                                 </span>
                             </div>
                         ))}
                     </CardContent>
-                    <div className="p-2 flex space-x-2">
+                    <div className="p-2 flex space-x-2 border-t">
                         <Input
                             type="text"
-                            placeholder="Type your question..."
+                            placeholder="Ask a question..."
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+                            className="h-8 text-xs"
                         />
-                        <Button onClick={handleSendMessage} size="sm">Send</Button>
+                        <Button onClick={handleSendMessage} size="sm" className="h-8">Send</Button>
                     </div>
                 </Card>
             )}
@@ -285,6 +299,11 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData | null>(null);
+  const [isClinicModalOpen, setIsClinicModalOpen] = useState(false);
+  const [clinicData, setClinicData] = useState<ClinicInfo[] | null>(null);
+  const [clinicLoading, setClinicLoading] = useState(false);
+  const [clinicError, setClinicError] = useState<string | null>(null);
+
 
   const uploadSectionRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
@@ -298,6 +317,9 @@ export default function Home() {
               setImagePreview(reader.result as string);
           };
           reader.readAsDataURL(file);
+           // Reset result when new image is selected
+           setResult(null);
+           setApiError(null);
       } else {
           setImagePreview(null);
       }
@@ -311,10 +333,9 @@ export default function Home() {
         title: "Assessment Saved",
         description: "Your assessment details have been recorded.",
     });
-    // Optionally trigger analysis immediately if image is also present
-    // if (selectedFile) {
-    //    handleAnalysis();
-    // }
+    // Reset result when questionnaire is updated
+    setResult(null);
+    setApiError(null);
   };
 
   // Handle the combined analysis logic
@@ -331,7 +352,7 @@ export default function Home() {
          toast({
            variant: "destructive",
            title: "Image Required",
-           description: "Image upload is required for analysis.",
+           description: "Image upload is required for reliable analysis.",
          });
          return;
      }
@@ -373,10 +394,22 @@ export default function Home() {
                  console.error("Error during classifyImage API call:", innerError);
                  let errorMessage = "Failed to classify the image due to an unexpected error.";
                  if (innerError instanceof Error) {
-                      errorMessage = `Failed to classify the image: ${innerError.message}`;
-                 } // Simplified error handling
+                      // Try to provide a more user-friendly message for common errors
+                      if (innerError.message.includes('deadline')) {
+                          errorMessage = "Analysis timed out. The server might be busy. Please try again.";
+                      } else if (innerError.message.includes('output')) {
+                           errorMessage = "The AI failed to generate a valid analysis. Please check the image or try again.";
+                      } else {
+                          errorMessage = `Failed to classify the image: ${innerError.message}`;
+                      }
+                 }
                  setApiError(errorMessage);
                  setResult(null);
+                 toast({
+                    variant: "destructive",
+                    title: "Analysis Error",
+                    description: errorMessage,
+                  });
             } finally {
                  setLoading(false);
                  console.log("Finished image classification attempt.");
@@ -386,6 +419,11 @@ export default function Home() {
             console.error("Error reading file:", error);
             setApiError("Could not read the uploaded image file.");
             setLoading(false);
+             toast({
+                variant: "destructive",
+                title: "File Read Error",
+                description: "Could not read the uploaded image file.",
+              });
         };
 
     } catch (error) {
@@ -393,72 +431,109 @@ export default function Home() {
       console.error("Error preparing analysis:", error);
       setApiError("An error occurred before starting the analysis.");
       setLoading(false);
+       toast({
+            variant: "destructive",
+            title: "Setup Error",
+            description: "An error occurred before starting the analysis.",
+        });
     }
   };
 
 
-   // --- Find Clinics Placeholder Logic ---
+   // --- Find Clinics Logic (Updated for Modal) ---
    const handleFindClinics = () => {
-     setLoading(true); // Reuse loading state for simplicity
-     setApiError(null);
+     setClinicLoading(true);
+     setClinicError(null);
+     setClinicData(null);
+     setIsClinicModalOpen(true); // Open the modal immediately
+
      console.log("Requesting location permission...");
      if (navigator.geolocation) {
        navigator.geolocation.getCurrentPosition(
-         (position) => {
+         async (position) => {
            const { latitude, longitude } = position.coords;
            console.log(`Location obtained: Lat ${latitude}, Lon ${longitude}`);
            toast({
              title: "Location Found",
              description: "Searching for nearby clinics...",
            });
-           // Placeholder for Google Maps API call
-           // Construct the Google Maps search URL
-           const mapsUrl = `https://www.google.com/maps/search/dermatologist+clinic+near+${latitude},${longitude}`;
-           // Open in a new tab
-           window.open(mapsUrl, '_blank');
-           // Simulate API call delay
-           setTimeout(() => {
-             setLoading(false);
-             // Here you would process API results and display them
-              toast({
-                  title: "Search Initiated",
-                  description: "Check the new tab for nearby clinics on Google Maps.",
-              });
-           }, 1500);
+
+           // --- Placeholder API Call ---
+           // Replace this with your actual API call to fetch clinic data
+           try {
+              // Simulate network delay
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
+               // *** Replace with ACTUAL API call logic ***
+               // const response = await fetch(`/api/find-clinics?lat=${latitude}&lon=${longitude}`);
+               // if (!response.ok) {
+               //   throw new Error('Failed to fetch clinic data');
+               // }
+               // const fetchedClinics: ClinicInfo[] = await response.json();
+
+              // --- START Placeholder Data ---
+               const fetchedClinics: ClinicInfo[] = [
+                   { id: '1', name: 'District General Hospital - Dermatology Dept.', address: '123 Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in' },
+                   { id: '2', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true },
+                   { id: '3', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com'},
+                   { id: '4', name: 'Urban Primary Health Centre (UPHC)', address: '90 Sector 5, Urban Area', distance: '5.1 km', estimatedCost: 'Free / Minimal Fee (Govt.)', schemes: ['PMJAY Lite'], isGovernment: true },
+                   { id: '5', name: 'Apollo Skin Care Center', address: '101 Apollo Ave, Mall Road', distance: '6.8 km', estimatedCost: '₹1200+ Consultation', schemes: [], isGovernment: false },
+               ];
+              // --- END Placeholder Data ---
+
+
+               setClinicData(fetchedClinics);
+               setClinicLoading(false);
+
+           } catch (fetchError: any) {
+              console.error("Error fetching clinic data:", fetchError);
+              setClinicError(`Failed to fetch clinic data: ${fetchError.message || 'Unknown error'}`);
+              setClinicLoading(false);
+               toast({
+                   variant: "destructive",
+                   title: "Clinic Search Failed",
+                   description: "Could not retrieve clinic information.",
+               });
+           }
+           // Note: Google Maps link opening is removed as results are shown in modal
+           // const mapsUrl = `https://www.google.com/maps/search/government+dermatologist+clinic+near+${latitude},${longitude}`;
+           // window.open(mapsUrl, '_blank');
          },
          (error) => {
            console.error("Error getting location:", error);
            let message = "Could not get your location.";
            if (error.code === error.PERMISSION_DENIED) {
-               message = "Location permission denied. Please enable it in your browser settings.";
+               message = "Location permission denied. Please enable it in your browser settings to search for clinics.";
            } else if (error.code === error.POSITION_UNAVAILABLE) {
                message = "Location information is unavailable.";
            } else if (error.code === error.TIMEOUT) {
                message = "The request to get user location timed out.";
            }
+           setClinicError(message);
+           setClinicLoading(false);
            toast({
              variant: "destructive",
              title: "Location Error",
              description: message,
            });
-           setLoading(false);
          },
          { timeout: 10000 } // Set timeout for location request
        );
      } else {
        console.error("Geolocation is not supported by this browser.");
+       setClinicError("Geolocation is not supported by this browser.");
+       setClinicLoading(false);
        toast({
          variant: "destructive",
          title: "Geolocation Not Supported",
          description: "Your browser does not support location services.",
        });
-       setLoading(false);
      }
    };
 
 
   const scrollToUpload = () => {
-    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); // Changed to start for better visibility
   };
 
   return (
@@ -518,7 +593,7 @@ export default function Home() {
       {/* Categories Section - Simplified */}
       <section id="conditions" className="container mx-auto py-16 px-4">
         <h2 className="text-3xl font-semibold text-center mb-4">Common Conditions We Analyze</h2>
-         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Our AI provides insights on conditions like Acne, Eczema, Psoriasis, and more. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
+         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {skinConditions.map((condition) => (
             <Card key={condition.name} className="text-center hover:shadow-lg transition-shadow duration-300 border border-border rounded-lg overflow-hidden bg-card flex flex-col items-center justify-start pt-6 pb-4 px-4 h-full">
@@ -540,11 +615,13 @@ export default function Home() {
             {/* Display questionnaire summary if data exists */}
             {questionnaireData && (
                  <Card className="mb-6 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800">
-                    <CardHeader>
-                         <CardTitle className="text-base text-blue-800 dark:text-blue-300">Assessment Summary Provided</CardTitle>
+                    <CardHeader className="p-3">
+                         <CardTitle className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Assessment Summary Provided</CardTitle>
                      </CardHeader>
-                    <CardContent>
-                         <p className="text-xs text-blue-700 dark:text-blue-400">Age: {questionnaireData.age ?? 'N/A'}, Gender: {questionnaireData.gender ?? 'N/A'}, Symptoms: {questionnaireData.symptoms ?? 'N/A'}...</p>
+                    <CardContent className="p-3 pt-0">
+                         <p className="text-xs text-blue-700 dark:text-blue-400">Age: {questionnaireData.age ?? 'N/A'} | Gender: {questionnaireData.gender ?? 'N/A'} | Symptom: {questionnaireData.symptoms ?? 'N/A'}</p>
+                         {/* Optionally add more fields */}
+                         {/* <p className="text-xs text-blue-700 dark:text-blue-400">Complexion: {questionnaireData.complexion ?? 'N/A'} | Products: {questionnaireData.products ? 'Yes' : 'No'}</p> */}
                      </CardContent>
                  </Card>
              )}
@@ -606,6 +683,15 @@ export default function Home() {
         </div>
       </footer>
        <Chatbot />
+
+        {/* Clinic Results Modal */}
+       <ClinicResultsModal
+          isOpen={isClinicModalOpen}
+          onClose={() => setIsClinicModalOpen(false)}
+          clinics={clinicData}
+          loading={clinicLoading}
+          error={clinicError}
+        />
     </div>
   );
 }

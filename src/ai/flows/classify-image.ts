@@ -50,6 +50,7 @@ const ClassifyImageOutputSchema = z.object({
 });
 export type ClassifyImageOutput = z.infer<typeof ClassifyImageOutputSchema>;
 
+// Define the async wrapper function which calls the flow
 export async function classifyImage(input: ClassifyImageInput): Promise<ClassifyImageOutput> {
   return classifyImageFlow(input);
 }
@@ -63,7 +64,7 @@ const classifyImagePrompt = ai.definePrompt({
     schema: ClassifyImageOutputSchema, // Use the updated output schema
   },
   // Updated prompt to incorporate questionnaire data if available
-  prompt: `Analyze the given face image and predict the most likely skin disease. Consider the provided user information if available.
+  prompt: `Analyze the given face image and predict the most likely skin disease. **Crucially, consider the provided user questionnaire data if available, as it offers valuable context.**
       Based on the HAM10000 dataset and common facial conditions, the possible skin diseases include (but are not limited to):
       - Actinic Keratosis (AKIEC): Rough, scaly patch on sun-exposed skin, pre-cancerous.
       - Basal Cell Carcinoma (BCC): Pearly or waxy bump, or a flat flesh-colored or brown scar-like lesion.
@@ -72,49 +73,65 @@ const classifyImagePrompt = ai.definePrompt({
       - Melanoma (MEL): Serious skin cancer; look for ABCDE rules (Asymmetry, Border irregularity, Color variation, Diameter >6mm, Evolving).
       - Melanocytic Nevi (NV): Common moles (benign).
       - Vascular Lesions (VASC): Cherry angiomas, spider angiomas, pyogenic granulomas (related to blood vessels).
+      - Acne Vulgaris: Pimples, blackheads, whiteheads, cysts. Often linked to hormonal changes or bacteria.
+      - Eczema (Atopic Dermatitis): Dry, itchy, red, inflamed patches. Often associated with allergies or irritants.
+      - Psoriasis: Red patches with silvery scales. Autoimmune condition.
+      - Vitiligo: Loss of skin color in patches. Autoimmune condition affecting melanocytes.
 
       User Provided Information (if any):
       {{#if questionnaireData}}
+      **Give higher weight to this information:**
       Age: {{questionnaireData.age}}
       Gender: {{questionnaireData.gender}}
       Complexion: {{questionnaireData.complexion}}
-      Reported Symptoms: {{questionnaireData.symptoms}}
+      Reported Symptoms: {{questionnaireData.symptoms}} <-- **Especially important context**
       Current Products: {{questionnaireData.products}}
       {{else}}
-      No questionnaire data provided. Rely primarily on image analysis.
+      No questionnaire data provided. Rely primarily on visual image analysis.
       {{/if}}
 
       Analyze the image carefully: {{media url=imageUri}}
 
-      Based on the visual evidence and any provided context, return:
-      1.  'predictedDisease': The single most likely disease/condition name from the list above (AKIEC, BCC, BKL, DF, MEL, NV, VASC) or 'Unknown/Benign' if no specific condition is detected or identifiable. Use the abbreviations provided (e.g., AKIEC, MEL, NV).
-      2.  'confidencePercentage': Your confidence level (0-100) for this specific prediction. Be realistic; confidence might be lower for subtle cases or poor image quality.
-      3.  'notes' (optional): Briefly mention key visual features supporting your prediction or any uncertainties. If suggesting 'MEL', 'BCC', or 'AKIEC', strongly emphasize consulting a dermatologist immediately. For 'NV' or 'BKL', mention they are typically benign but monitoring changes is good practice.
+      Based *primarily* on the visual evidence but *informed* by the questionnaire data (if provided), return:
+      1.  'predictedDisease': The single most likely disease/condition name from the list above (e.g., Acne Vulgaris, Eczema, Psoriasis, Vitiligo, Melanoma, AKIEC, BCC, BKL, DF, MEL, NV, VASC) or 'Unknown/Benign' if no specific condition is detected or identifiable. Use the full names or standard abbreviations.
+      2.  'confidencePercentage': Your confidence level (0-100) for this specific prediction. Be realistic; confidence might be lower for subtle cases, poor image quality, or conflicting information.
+      3.  'notes' (optional): Briefly mention key visual features supporting your prediction OR any uncertainties. If questionnaire data influenced the decision (e.g., symptoms matching visual cues), mention it. If suggesting 'MEL', 'BCC', or 'AKIEC', strongly emphasize consulting a dermatologist immediately. For 'NV' or 'BKL', mention they are typically benign but monitoring changes is good practice.
       `,
 });
 
+// Define the flow using ai.defineFlow
 const classifyImageFlow = ai.defineFlow<
   typeof ClassifyImageInputSchema,
   typeof ClassifyImageOutputSchema
->({
-  name: 'classifyImageFlow',
-  inputSchema: ClassifyImageInputSchema,
-  outputSchema: ClassifyImageOutputSchema,
-}, async input => {
-  console.log("Flow Input:", input); // Log input to check questionnaire data
-  const {output} = await classifyImagePrompt(input);
+>(
+  {
+    name: 'classifyImageFlow',
+    inputSchema: ClassifyImageInputSchema,
+    outputSchema: ClassifyImageOutputSchema,
+  },
+  async (input) => {
+    console.log('Flow Input:', {
+      imageUri: 'URI_preview_omitted',
+      questionnaireData: input.questionnaireData,
+    }); // Log input to check questionnaire data
+    const {output} = await classifyImagePrompt(input);
 
-  // Basic validation/fallback for output
-  if (!output) {
-      throw new Error("AI analysis did not return a valid output.");
+    // Basic validation/fallback for output
+    if (!output) {
+      throw new Error('AI analysis did not return a valid output.');
+    }
+    if (!output.predictedDisease) {
+      output.predictedDisease = 'Analysis Inconclusive';
+    }
+    if (
+      typeof output.confidencePercentage !== 'number' ||
+      output.confidencePercentage < 0 ||
+      output.confidencePercentage > 100
+    ) {
+      output.confidencePercentage = 0; // Default confidence if invalid
+    }
+
+    console.log('Flow Output:', output);
+    return output;
   }
-   if (!output.predictedDisease) {
-       output.predictedDisease = "Analysis Inconclusive";
-   }
-   if (typeof output.confidencePercentage !== 'number' || output.confidencePercentage < 0 || output.confidencePercentage > 100) {
-       output.confidencePercentage = 0; // Default confidence if invalid
-   }
-
-  console.log("Flow Output:", output);
-  return output;
-});
+);
