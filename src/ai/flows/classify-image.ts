@@ -51,7 +51,15 @@ const classifyImagePrompt = ai.definePrompt({
     }),
   },
   prompt: `Analyze the given face image and predict the skin disease.
-      The possible skin diseases are: Acne, Eczema, Psoriasis, Vitiligo, Melanoma.
+      Based on the HAM10000 dataset, the possible skin diseases are:
+      - Melanocytic nevi (nv)
+      - Melanoma (mel)
+      - Benign keratosis-like lesions (bkl)
+      - Basal cell carcinoma (bcc)
+      - Actinic keratoses (akiec)
+      - Vascular lesions (vasc)
+      - Dermatofibroma (df)
+
       Return the predicted disease name and the confidence percentage of your prediction.
 
       Here is the face image: {{media url=imageUri}}

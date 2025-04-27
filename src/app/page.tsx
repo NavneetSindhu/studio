@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 const skinConditions = [
-  { name: "Acne", icon: "" },
-  { name: "Eczema", icon: "" },
-  { name: "Psoriasis", icon: "" },
-  { name: "Vitiligo", icon: "" },
-  { name: "Melanoma", icon: "" },
+  { name: "Melanocytic nevi (nv)", icon: "" },
+  { name: "Melanoma (mel)", icon: "" },
+  { name: "Benign keratosis-like lesions (bkl)", icon: "" },
+  { name: "Basal cell carcinoma (bcc)", icon: "" },
+  { name: "Actinic keratoses (akiec)", icon: "" },
+  { name: "Vascular lesions (vasc)", icon: "" },
+  { name: "Dermatofibroma (df)", icon: "" },
 ];
 
 function ImageUpload({ onImageUpload }: { onImageUpload: (image: string) => void }) {
