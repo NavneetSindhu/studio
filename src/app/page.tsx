@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -543,8 +542,9 @@ export default function Home() {
         <div className="container mx-auto flex items-center justify-between px-4">
            <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-primary hover:opacity-90 transition-opacity">
              <HeartPulse className="h-6 w-6" />
-             <span>SkinDeep AI</span>
+             <span>SkinSeva</span>
           </Link>
+           <span className="text-muted-foreground text-sm">स्वस्थ जीवन सुखी जीवन</span>
           <div className="flex items-center space-x-1 md:space-x-2">
               <Button variant="ghost" asChild size="sm">
                  <Link href="/" className="text-sm">Home</Link>
@@ -672,7 +672,7 @@ export default function Home() {
       <footer className="w-full py-8 bg-card text-muted-foreground border-t mt-16">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center px-4 text-center md:text-left">
           <div className="text-xs mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} SkinDeep AI. All Rights Reserved. <br/>
+            &copy; {new Date().getFullYear()} SkinSeva. All Rights Reserved. <br/>
             <span className="text-destructive font-semibold">Disclaimer: This tool is for informational purposes only and does not provide medical advice.</span>
           </div>
           <div className="flex space-x-4">
@@ -695,3 +695,5 @@ export default function Home() {
     </div>
   );
 }
+
+

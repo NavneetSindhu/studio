@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SkinDeep AI',
+  title: 'SkinSeva - स्वस्थ जीवन सुखी जीवन',
   description: 'Detect facial skin diseases from uploaded images.',
 };
 
@@ -40,3 +40,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+
