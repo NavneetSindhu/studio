@@ -9,25 +9,25 @@ body {
 
 @layer base {
   :root {
-    --background: 225 100% 97.8%; /* Light Blue */
+    --background: 225 100% 97.8%; /* Soft Blue (#B0E2FF) */
     --foreground: 210 23% 14.7%; /* Dark Grey */
     --card: 0 0% 100%;
     --card-foreground: 210 23% 14.7%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 23% 14.7%;
-    --primary: 207 71% 53%; /* Blue */
+    --primary: 207 71% 53%; /* Soft Blue */
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 100%;
     --secondary-foreground: 210 22% 11.8%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 207 71% 53%; /* Blue */
+    --accent: 180 100% 25%; /* Teal (#008080) */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 207 71% 53%; /* Blue */
+    --ring: 207 71% 53%; /* Soft Blue */
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -45,13 +45,13 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 207 71% 53%; /* Blue */
+    --primary: 207 71% 53%; /* Soft Blue */
     --primary-foreground: 240 5.9% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 3.8% 63.9%;
-    --accent: 207 71% 53%; /* Blue */
+    --accent: 207 71% 53%; /* Soft Blue */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -82,3 +82,4 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
