@@ -10,7 +10,6 @@
  * @exports classifyImage - The main function to classify the image and return the disease prediction.
  * @exports ClassifyImageInput - The input type for the classifyImage function.
  * @exports ClassifyImageOutput - The output type for the classifyImage function.
- * @exports QuestionnaireDataSchema - The Zod schema for questionnaire data.
  * @exports QuestionnaireData - The type for questionnaire data.
  */
 
@@ -18,13 +17,14 @@ import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 
 // Define schema for optional questionnaire data
-export const QuestionnaireDataSchema = z.object({
+const QuestionnaireDataSchema = z.object({
   age: z.number().optional().describe('User\'s age.'),
   gender: z.string().optional().describe('User\'s gender.'),
   complexion: z.string().optional().describe('User\'s skin complexion.'),
   products: z.string().optional().describe('Skincare products currently used by the user.'),
   symptoms: z.string().optional().describe('Primary symptoms reported by the user.'),
 }).optional();
+// Export the type, but not the schema object itself
 export type QuestionnaireData = z.infer<typeof QuestionnaireDataSchema>;
 
 
@@ -65,14 +65,13 @@ const classifyImagePrompt = ai.definePrompt({
   // Updated prompt to incorporate questionnaire data if available
   prompt: `Analyze the given face image and predict the most likely skin disease. Consider the provided user information if available.
       Based on the HAM10000 dataset and common facial conditions, the possible skin diseases include (but are not limited to):
-      - Acne Vulgaris (common acne, pimples, blackheads)
-      - Eczema / Atopic Dermatitis (itchy, red, inflamed patches)
-      - Psoriasis (red, flaky patches with silvery scales)
-      - Vitiligo (loss of skin color in patches)
-      - Melanoma / Suspicious Mole (a type of skin cancer, check ABCDE rules)
-      - Rosacea (facial redness, flushing, visible blood vessels)
-      - Seborrheic Dermatitis (flaky, yellowish scales on oily areas)
-      - Actinic Keratosis (rough, scaly patch on sun-exposed skin, pre-cancerous)
+      - Actinic Keratosis (AKIEC): Rough, scaly patch on sun-exposed skin, pre-cancerous.
+      - Basal Cell Carcinoma (BCC): Pearly or waxy bump, or a flat flesh-colored or brown scar-like lesion.
+      - Benign Keratosis-like Lesions (BKL): Seborrheic keratoses, solar lentigines, etc. (non-cancerous growths).
+      - Dermatofibroma (DF): Small, firm bump in the skin, often on lower legs.
+      - Melanoma (MEL): Serious skin cancer; look for ABCDE rules (Asymmetry, Border irregularity, Color variation, Diameter >6mm, Evolving).
+      - Melanocytic Nevi (NV): Common moles (benign).
+      - Vascular Lesions (VASC): Cherry angiomas, spider angiomas, pyogenic granulomas (related to blood vessels).
 
       User Provided Information (if any):
       {{#if questionnaireData}}
@@ -88,9 +87,9 @@ const classifyImagePrompt = ai.definePrompt({
       Analyze the image carefully: {{media url=imageUri}}
 
       Based on the visual evidence and any provided context, return:
-      1.  'predictedDisease': The single most likely disease name from the list above or 'Unknown/Benign' if no disease is detected or identifiable.
+      1.  'predictedDisease': The single most likely disease/condition name from the list above (AKIEC, BCC, BKL, DF, MEL, NV, VASC) or 'Unknown/Benign' if no specific condition is detected or identifiable. Use the abbreviations provided (e.g., AKIEC, MEL, NV).
       2.  'confidencePercentage': Your confidence level (0-100) for this specific prediction. Be realistic; confidence might be lower for subtle cases or poor image quality.
-      3.  'notes' (optional): Briefly mention key visual features supporting your prediction or any uncertainties. If suggesting 'Melanoma' or 'Actinic Keratosis', strongly emphasize consulting a dermatologist immediately.
+      3.  'notes' (optional): Briefly mention key visual features supporting your prediction or any uncertainties. If suggesting 'MEL', 'BCC', or 'AKIEC', strongly emphasize consulting a dermatologist immediately. For 'NV' or 'BKL', mention they are typically benign but monitoring changes is good practice.
       `,
 });
 
@@ -119,4 +118,3 @@ const classifyImageFlow = ai.defineFlow<
   console.log("Flow Output:", output);
   return output;
 });
-
