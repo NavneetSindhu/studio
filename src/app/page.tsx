@@ -108,18 +108,18 @@ function ResultDisplay({ result }: { result: ClassifyImageOutput | null }) {
 export default function Home() {
   const [result, setResult] = useState<ClassifyImageOutput | null>(null);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleImageUpload = async (image: string) => {
     setLoading(true);
+    setApiError(null);
     try {
       const apiResult = await classifyImage({ imageUri: image });
       setResult(apiResult);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error classifying image:", error);
-      setResult({
-        predictedDisease: "Error",
-        confidencePercentage: 0,
-      });
+      setApiError("Failed to classify the image. Please try again.");
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,15 @@ export default function Home() {
                </CardContent>
              </Card>
            ) : (
-            <ResultDisplay result={result} />
+            <>
+              {apiError && (
+                <Alert variant="destructive">
+                  <XCircle className="h-4 w-4" />
+                  <AlertDescription>{apiError}</AlertDescription>
+                </Alert>
+              )}
+              <ResultDisplay result={result} />
+            </>
           )}
         </div>
       </main>
