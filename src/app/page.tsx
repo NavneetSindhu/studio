@@ -126,36 +126,38 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+    <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-50">
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 text-center">
-        <h1 className="text-4xl font-bold text-primary">
-          SkinDeep AI
-        </h1>
-        <p className="text-gray-600 mt-3">Detect facial skin diseases from uploaded images.</p>
-        <div className="mt-8 w-full max-w-2xl space-y-6">
-          <ImageUpload onImageUpload={handleImageUpload} />
-          {loading ? (
-             <Card>
-               <CardHeader>
-                 <CardTitle>Analyzing Image...</CardTitle>
-                 <CardDescription>Please wait while the image is being analyzed.</CardDescription>
-               </CardHeader>
-               <CardContent className="flex flex-col items-center justify-center space-y-4">
-                 <Progress value={0} />
-               </CardContent>
-             </Card>
-           ) : (
-            <>
-              {apiError && (
-                <Alert variant="destructive">
-                  <XCircle className="h-4 w-4" />
-                  <AlertDescription>{apiError}</AlertDescription>
-                </Alert>
-              )}
-              <ResultDisplay result={result} />
-            </>
-          )}
-        </div>
+         <div className="bg-white rounded-lg shadow-md p-8 max-w-4xl w-full">
+           <h1 className="text-4xl font-bold text-gray-800">
+             SkinDeep AI
+           </h1>
+           <p className="text-gray-600 mt-3">Detect facial skin diseases from uploaded images.</p>
+           <div className="mt-8 w-full space-y-6">
+             <ImageUpload onImageUpload={handleImageUpload} />
+             {loading ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Analyzing Image...</CardTitle>
+                    <CardDescription>Please wait while the image is being analyzed.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center justify-center space-y-4">
+                    <Progress value={0} />
+                  </CardContent>
+                </Card>
+              ) : (
+               <>
+                 {apiError && (
+                   <Alert variant="destructive">
+                     <XCircle className="h-4 w-4" />
+                     <AlertDescription>{apiError}</AlertDescription>
+                   </Alert>
+                 )}
+                 <ResultDisplay result={result} />
+               </>
+             )}
+           </div>
+         </div>
       </main>
     </div>
   );
