@@ -152,7 +152,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative w-full h-96 flex items-center justify-center bg-[url('https://picsum.photos/1920/1080')] bg-cover bg-center text-white">
+      <section className="relative w-full h-96 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1627538369438-c80e91061a18?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center text-white">
         <div className="absolute inset-0 bg-black opacity-40"></div>
         <div className="container mx-auto text-center relative z-10">
           <h1 className="text-5xl font-bold mb-4">Detect Skin Diseases Early with AI</h1>
