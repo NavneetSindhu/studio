@@ -32,25 +32,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Assuming Textarea exists
-import { AlertCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import type { QuestionnaireData } from "@/ai/flows/classify-image"; // Import the type
 
-// Define Zod schema for validation
+// Define Zod schema for validation matching the Genkit flow input
 const formSchema = z.object({
   age: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), // Convert empty string to undefined, then to number
-    z.number({ invalid_type_error: "Please enter a valid age" }).positive().int().optional()
-  ),
-  gender: z.string().min(1, "Please select a gender"),
-  complexion: z.string().min(1, "Please select your complexion"),
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Please enter a valid age" }).positive("Age must be positive").int("Age must be a whole number").optional()
+  ).optional(),
+  gender: z.string().optional(),
+  complexion: z.string().optional(),
   products: z.string().optional(),
-  symptoms: z.string().min(1, "Please select the primary issue/symptom"),
+  symptoms: z.string().min(1, "Please select the primary issue/symptom"), // Keep symptoms required for context
 });
+
 
 type QuestionnaireFormValues = z.infer<typeof formSchema>;
 
 interface QuestionnaireModalProps {
   children: React.ReactNode; // To wrap the trigger button
+  onSave: (data: QuestionnaireData) => void; // Callback to pass data up
 }
 
 // Placeholder data - replace with actual options
@@ -77,7 +79,7 @@ const symptomOptions = [
   "Other",
 ];
 
-export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
+export function QuestionnaireModal({ children, onSave }: QuestionnaireModalProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const form = useForm<QuestionnaireFormValues>({
     resolver: zodResolver(formSchema),
@@ -90,13 +92,21 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
     },
   });
 
+  // Updated onSubmit to call the onSave prop
   const onSubmit: SubmitHandler<QuestionnaireFormValues> = (data) => {
-    console.log("Questionnaire Data:", data);
-    // Here you would typically send the data to your backend or AI flow
-    setIsOpen(false); // Close modal on submit
-    form.reset(); // Reset form after submission
-    // Optionally, show a success message or trigger next step
-  };
+     // Prepare data in the format expected by QuestionnaireData
+     const saveData: QuestionnaireData = {
+       age: data.age,
+       gender: data.gender || undefined, // Ensure empty strings become undefined
+       complexion: data.complexion || undefined,
+       products: data.products || undefined,
+       symptoms: data.symptoms, // Symptoms is required by schema here
+     };
+     console.log("Submitting Questionnaire Data:", saveData);
+     onSave(saveData); // Pass the formatted data up
+     setIsOpen(false); // Close modal on submit
+     form.reset(); // Reset form after submission
+   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -105,20 +115,21 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
         <DialogHeader>
           <DialogTitle>Assess Your Skin</DialogTitle>
           <DialogDescription>
-            Please answer a few questions to help us understand your skin concerns better. This information is optional for image analysis but can provide context.
+            Please answer a few questions to help the AI provide a more contextual analysis.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="age"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Age</FormLabel>
+                    <FormLabel>Age (Optional)</FormLabel>
                     <FormControl>
-                       <Input type="number" placeholder="e.g., 25" {...field} onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)} />
+                       {/* Ensure onChange handles empty string correctly */}
+                       <Input type="number" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -129,7 +140,7 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
+                    <FormLabel>Gender (Optional)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -154,7 +165,7 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
                 name="complexion"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Complexion</FormLabel>
+                    <FormLabel>Complexion (Optional)</FormLabel>
                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                        <FormControl>
                          <SelectTrigger>
@@ -187,7 +198,7 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
                     />
                   </FormControl>
                   <FormDescription>
-                    This helps understand potential interactions or routines.
+                    Helps understand potential interactions or routines.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +210,7 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
               name="symptoms"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Primary Issue / Symptom</FormLabel>
+                  <FormLabel>Primary Issue / Symptom*</FormLabel>
                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                      <FormControl>
                        <SelectTrigger>
@@ -214,6 +225,9 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
                        ))}
                      </SelectContent>
                    </Select>
+                   <FormDescription>
+                        Select the main concern you are experiencing.
+                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -223,7 +237,7 @@ export function QuestionnaireModal({ children }: QuestionnaireModalProps) {
               <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">Submit Assessment</Button>
+              <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">Save Assessment</Button>
             </DialogFooter>
           </form>
         </Form>

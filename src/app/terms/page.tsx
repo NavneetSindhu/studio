@@ -2,26 +2,38 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeartPulse } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 
 export default function TermsOfServicePage() {
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
        {/* Simple Header for this page */}
-        <nav className="w-full py-3 bg-card shadow-sm sticky top-0 z-50 border-b">
+        <nav className="w-full py-2 bg-card shadow-sm sticky top-0 z-50 border-b">
             <div className="container mx-auto flex items-center justify-between px-4">
                 <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-primary hover:opacity-90 transition-opacity">
                     <HeartPulse className="h-6 w-6" />
                     <span>SkinDeep AI</span>
                 </Link>
-                 <div className="flex space-x-2 items-center">
-                    <Button variant="ghost" asChild>
-                        <Link href="/" className="text-sm">Home</Link>
+                 <div className="flex items-center space-x-1 md:space-x-2">
+                    <Button variant="ghost" asChild size="sm">
+                       <Link href="/" className="text-sm">Home</Link>
                     </Button>
-                     <span className="text-muted-foreground/30">|</span>
-                     <Button variant="ghost" asChild>
-                         <Link href="/awareness" className="text-sm">Skin Conditions</Link>
+                     <span className="text-muted-foreground/30 hidden md:inline">|</span>
+                     <Button variant="ghost" asChild size="sm">
+                         <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
                      </Button>
+                      <div className="flex items-center space-x-1 pl-2 border-l border-border ml-2">
+                         <LanguageToggle />
+                         <ThemeToggle />
+                     </div>
+                      {/* Mobile Menu Trigger (placeholder) */}
+                     <div className="md:hidden">
+                         <Button variant="ghost" size="icon">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                         </Button>
+                     </div>
                 </div>
             </div>
         </nav>
@@ -29,85 +41,100 @@ export default function TermsOfServicePage() {
       <main className="container mx-auto px-4 py-12 flex-grow">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
-          <p className="mb-4">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="mb-4 text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
 
-          <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">1. Acceptance of Terms</h2>
+          <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using the SkinDeep AI application ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you may not access the Service.
+              By accessing or using the SkinDeep AI application ("Service"), you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy. If you disagree with any part of the terms, then you may not access the Service.
             </p>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">2. Description of Service</h2>
+          <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">2. Description of Service</h2>
             <p>
-                SkinDeep AI provides an informational tool that uses artificial intelligence to analyze user-uploaded images or questionnaire responses related to skin conditions. The Service provides potential classifications based on patterns learned from datasets.
+                SkinDeep AI provides an informational tool that uses artificial intelligence ("AI") to analyze user-uploaded images and/or questionnaire responses related to potential skin conditions. The Service may provide potential classifications or insights based on patterns learned from data. It also offers optional features like finding nearby clinics based on user location.
             </p>
           </section>
 
-           <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">3. No Medical Advice Disclaimer</h2>
+           <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">3. No Medical Advice Disclaimer</h2>
             <p className="font-bold text-destructive mb-2">
-                IMPORTANT: The Service is for informational purposes only and does not provide medical advice, diagnosis, or treatment.
+                IMPORTANT: THE SERVICE IS FOR INFORMATIONAL AND EDUCATIONAL PURPOSES ONLY. IT DOES NOT PROVIDE MEDICAL ADVICE, DIAGNOSIS, OR TREATMENT RECOMMENDATIONS.
             </p>
              <p className="mb-2">
-                The analysis provided by SkinDeep AI is generated by an AI model and is not a substitute for professional medical evaluation by a qualified healthcare provider, such as a dermatologist. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. Never disregard professional medical advice or delay in seeking it because of something you have read or received from this Service.
+                The analysis, classifications, or insights provided by SkinDeep AI are generated by an AI model and are not a substitute for professional medical evaluation, diagnosis, or treatment by a qualified healthcare provider (such as a dermatologist). The AI's output may be inaccurate or incomplete.
+            </p>
+             <p className="mb-2">
+                Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition or symptoms. Never disregard professional medical advice or delay in seeking it because of information obtained from this Service.
             </p>
             <p>
-                Reliance on any information provided by the Service is solely at your own risk. We do not guarantee the accuracy or completeness of any information provided.
+                Reliance on any information provided by the Service is solely at your own risk. We make no guarantees regarding the accuracy, completeness, or timeliness of the information provided. Emergency situations should be addressed by contacting emergency services immediately.
             </p>
           </section>
 
-            <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">4. User Responsibilities</h2>
-             <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>You are responsible for the images and information you provide to the Service. Ensure you have the necessary rights to upload any images.</li>
-                <li>You agree not to use the Service for any unlawful purpose or in any way that could damage, disable, overburden, or impair the Service.</li>
-                 <li>You understand that the quality of the analysis depends on the quality of the image provided. Clear, well-lit images are recommended.</li>
-                <li>You must be 18 years of age or older (or the age of majority in your jurisdiction) to use this Service.</li>
+            <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">4. User Responsibilities and Conduct</h2>
+             <ul className="list-disc list-inside space-y-1 ml-4 text-foreground/90">
+                <li>You are responsible for the images and information (including questionnaire responses) you provide to the Service. Ensure you have the necessary rights and permissions to upload any images and share any personal information.</li>
+                <li>You agree to provide accurate and truthful information to the best of your ability, particularly in the questionnaire, as this may influence the AI analysis.</li>
+                 <li>You agree not to use the Service for any unlawful purpose, to request medical advice or diagnosis, or in any way that could damage, disable, overburden, or impair the Service or interfere with any other party's use of the Service.</li>
+                 <li>You understand that the quality and accuracy of the AI analysis depend heavily on the quality of the uploaded image and the completeness/accuracy of questionnaire data. Clear, well-lit images of the area of concern are recommended.</li>
+                 <li>You must be 18 years of age or older (or the age of legal majority in your jurisdiction) to use this Service.</li>
+                 <li>You are responsible for your interactions with any clinics identified through the "Find Nearest Clinic" feature. We do not endorse or guarantee the services of any listed clinic.</li>
              </ul>
           </section>
 
-            <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">5. Intellectual Property</h2>
+            <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">5. Location Services</h2>
+             <p>
+                The "Find Nearest Clinic" feature requires access to your device's location services. By using this feature, you consent to us accessing your location solely for the purpose of finding nearby clinics during that session. Your location data is not stored by us after the search. Accuracy of clinic information depends on third-party data (e.g., Google Maps) and is not guaranteed.
+             </p>
+          </section>
+
+          <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">6. Intellectual Property</h2>
             <p>
-                The Service and its original content (excluding user-provided images and data), features, and functionality are and will remain the exclusive property of SkinDeep AI and its licensors.
+                The Service and its original content (excluding user-provided images and data), features, functionality, and underlying AI models are and will remain the exclusive property of SkinDeep AI and its licensors. The Service is protected by copyright, trademark, and other laws.
             </p>
           </section>
 
-           <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">6. Privacy</h2>
+           <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">7. Privacy</h2>
             <p>
-                Your use of the Service is also governed by our Privacy Policy, which can be found <Link href="/privacy" className="text-primary hover:underline">here</Link>. Please review our Privacy Policy to understand our practices regarding the collection and use of your information.
+                Your use of the Service is also governed by our Privacy Policy, which describes how we collect, use, and protect your information. Please review our Privacy Policy carefully: <Link href="/privacy" className="text-primary hover:underline">[Link to Privacy Policy]</Link>.
             </p>
           </section>
 
-            <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">7. Limitation of Liability</h2>
+            <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">8. Disclaimers and Limitation of Liability</h2>
             <p>
-                In no event shall SkinDeep AI, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service; (iii) any content obtained from the Service; and (iv) unauthorized access, use or alteration of your transmissions or content, whether based on warranty, contract, tort (including negligence) or any other legal theory, whether or not we have been informed of the possibility of such damage, and even if a remedy set forth herein is found to have failed of its essential purpose.
+                THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS. SKINDEEP AI EXPRESSLY DISCLAIMS ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE MAKE NO WARRANTY THAT THE SERVICE WILL MEET YOUR REQUIREMENTS, BE ACCURATE, RELIABLE, UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE.
+            </p>
+             <p className="mt-2">
+                IN NO EVENT SHALL SKINDEEP AI, NOR ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES, BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (I) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE SERVICE; (II) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE SERVICE; (III) ANY CONTENT OR INFORMATION OBTAINED FROM THE SERVICE, INCLUDING ANY AI-GENERATED ANALYSIS; (IV) UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), OR ANY OTHER LEGAL THEORY, WHETHER OR NOT WE HAVE BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGE.
             </p>
             <p className="mt-2">
-                Our liability is limited to the maximum extent permitted by law. Because the service is provided for informational purposes and does not constitute medical advice, you agree that your use of the service is at your sole risk.
+                YOUR SOLE AND EXCLUSIVE REMEDY FOR DISSATISFACTION WITH THE SERVICE IS TO STOP USING THE SERVICE.
             </p>
           </section>
 
-           <section className="mb-6">
-            <h2 className="text-2xl font-semibold mb-3">8. Changes to Terms</h2>
+           <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">9. Changes to Terms</h2>
             <p>
-               We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will try to provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.
+               We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will make reasonable efforts to provide notice prior to any new terms taking effect (e.g., by posting a notice on the Service). What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-3">9. Governing Law</h2>
+          <section className="mb-6 space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">10. Governing Law</h2>
             <p>
-              These Terms shall be governed and construed in accordance with the laws of [Your Jurisdiction - e.g., State of California, USA], without regard to its conflict of law provisions.
+              These Terms shall be governed and construed in accordance with the laws of [Your Jurisdiction - e.g., India, State of California, USA], without regard to its conflict of law provisions.
             </p>
           </section>
 
-            <section className="mt-6">
-            <h2 className="text-2xl font-semibold mb-3">10. Contact Us</h2>
+            <section className="space-y-2">
+            <h2 className="text-2xl font-semibold mb-3 border-b pb-2">11. Contact Us</h2>
             <p>
               If you have any questions about these Terms, please contact us at: <Link href="mailto:terms@skindeepai.example.com" className="text-primary hover:underline">terms@skindeepai.example.com</Link>
             </p>
