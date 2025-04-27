@@ -52,13 +52,12 @@ const classifyImagePrompt = ai.definePrompt({
   },
   prompt: `Analyze the given face image and predict the skin disease.
       Based on the HAM10000 dataset, the possible skin diseases are:
-      - Melanocytic nevi (nv)
-      - Melanoma (mel)
-      - Benign keratosis-like lesions (bkl)
-      - Basal cell carcinoma (bcc)
-      - Actinic keratoses (akiec)
-      - Vascular lesions (vasc)
-      - Dermatofibroma (df)
+      - Acne (pimples or blackheads)
+      - Psoriasis (red, flaky, and sometimes scaly patches)
+      - Vitiligo (loss of skin color in patches)
+      - Melanoma (a type of skin cancer, usually dark or irregular moles)
+
+      Return the predicted disease name and the confidence percentage of your prediction.
 
       Return the predicted disease name and the confidence percentage of your prediction.
 
