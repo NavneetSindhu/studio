@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -15,6 +14,7 @@ import { QuestionnaireModal } from "@/components/QuestionnaireModal";
 import { ThemeToggle } from "@/components/ThemeToggle"; // Import ThemeToggle
 import { LanguageToggle } from "@/components/LanguageToggle"; // Import LanguageToggle
 import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 // Placeholder skin conditions data (replace with actual data structure if needed)
 const skinConditions = [
@@ -209,6 +209,72 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
       </CardContent>
     </Card>
   );
+}
+
+// --- Chatbot Component ---
+function Chatbot() {
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState([
+        { text: "Hello! How can I help you with your skin concerns today?", sender: "bot" }
+    ]);
+    const [newMessage, setNewMessage] = useState("");
+
+    const toggleChat = () => {
+        setIsOpen(!isOpen);
+    };
+
+    const handleSendMessage = () => {
+        if (newMessage.trim() !== "") {
+            setMessages([...messages, { text: newMessage, sender: "user" }]);
+            // Basic bot response (replace with actual AI logic)
+            setTimeout(() => {
+                setMessages([...messages, { text: "Thanks for your question! We are still under development and will provide feedback soon. If you require immediate assistance, please upload an image.", sender: "bot" }]);
+            }, 500);
+            setNewMessage("");
+        }
+    };
+
+    return (
+        <div className="fixed bottom-4 right-4 z-50">
+            {!isOpen ? (
+                <Button size="icon" onClick={toggleChat} className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
+                   <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://picsum.photos/200/200" alt="Chatbot Avatar" />
+                      <AvatarFallback>AI</AvatarFallback>
+                   </Avatar>
+                </Button>
+            ) : (
+                <Card className="w-80 shadow-lg">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>SkinDeep AI Assistant</CardTitle>
+                        <Button size="icon" variant="ghost" onClick={toggleChat}>
+                            <XCircle className="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="h-64 overflow-y-auto">
+                        {messages.map((message, index) => (
+                            <div key={index} className={message.sender === "user" ? "text-right" : "text-left"}>
+                                <span className={cn("inline-block p-2 rounded-lg text-sm", 
+                                    message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
+                                    {message.text}
+                                </span>
+                            </div>
+                        ))}
+                    </CardContent>
+                    <div className="p-2 flex space-x-2">
+                        <Input
+                            type="text"
+                            placeholder="Type your question..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+                        />
+                        <Button onClick={handleSendMessage} size="sm">Send</Button>
+                    </div>
+                </Card>
+            )}
+        </div>
+    );
 }
 
 // --- Main Home Component ---
@@ -539,7 +605,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+       <Chatbot />
     </div>
   );
 }
-
