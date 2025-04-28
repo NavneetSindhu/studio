@@ -22,6 +22,7 @@ import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal"
 import { ResultsPopupModal } from "@/components/ResultsPopupModal"; // Import the new results popup
 import { generatePdfReport, viewPdf, downloadPdf } from "@/lib/pdfUtils"; // Import PDF utilities
 import { format } from 'date-fns'; // For formatting dates
+import { jsPDF } from "jspdf"; // Import jsPDF explicitly
 
 
 // --- Session Report Type ---
@@ -500,10 +501,10 @@ export default function Home() {
 
 
     console.log("Starting analysis...");
-    setLoading(true);
+    setLoading(true); // Set loading state for UI feedback
     setApiError(null);
-    setResult(null);
-    setIsResultsPopupOpen(true); // Open the popup immediately to show loading state
+    setResult(null); // Clear previous results
+    setIsResultsPopupOpen(true); // *** Open the popup immediately ***
 
     try {
         const imageUri = imagePreview;
@@ -865,7 +866,7 @@ export default function Home() {
 
 
                 <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
-                    {loading ? (
+                    {loading && isResultsPopupOpen ? ( // Show loading text only when popup is open
                         <>
                             <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
                             Analyzing...
@@ -944,4 +945,3 @@ export default function Home() {
     </div>
   );
 }
-
