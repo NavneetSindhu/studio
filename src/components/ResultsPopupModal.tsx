@@ -9,7 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, AlertCircle, HeartPulse, Download, Eye, Loader2, MapPin } from "lucide-react"; // Added MapPin
 import type { ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
-import { generatePdfReport, viewPdf, downloadPdf } from "@/lib/pdfUtils"; // Import PDF utilities
 import { useToast } from "@/hooks/use-toast"; // Import useToast for better feedback
 import { jsPDF } from "jspdf"; // Import jsPDF
 
@@ -22,6 +21,8 @@ interface ResultsPopupModalProps {
     loading: boolean; // Indicate if the analysis is still loading initially
     apiError: string | null;
     onFindClinics: () => void; // Callback to trigger clinic search
+    onViewPdf: () => Promise<void>; // Added prop for viewing PDF
+    onDownloadPdf: () => Promise<void>; // Added prop for downloading PDF
 }
 
 export function ResultsPopupModal({
@@ -32,50 +33,35 @@ export function ResultsPopupModal({
     imageUri,
     loading,
     apiError,
-    onFindClinics // Receive the handler
+    onFindClinics, // Receive the handler
+    onViewPdf, // Receive PDF view handler
+    onDownloadPdf // Receive PDF download handler
 }: ResultsPopupModalProps) {
 
     const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
     const { toast } = useToast(); // Use toast for feedback
 
-    const handleViewPdf = async () => {
+    const handleViewPdfClick = async () => {
         if (!result || !imageUri || isPdfGenerating) return;
         setIsPdfGenerating(true);
-        toast({ title: "Generating PDF", description: "Please wait..." }); // Inform user
         try {
-            // Use async generation if it becomes complex
-            await new Promise(resolve => setTimeout(resolve, 50)); // Simulate short delay/allow UI update
-            const doc = generatePdfReport(result, questionnaireData, imageUri);
-             // Use the existing viewPdf utility
-            const pdfDataUri = doc.output('datauristring');
-            const pdfWindow = window.open("");
-            if (pdfWindow) {
-                pdfWindow.document.write(`<iframe width='100%' height='100%' src='${pdfDataUri}'></iframe>`);
-                 pdfWindow.document.title = `SkinSewa Report Preview`;
-            } else {
-                 toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
-            }
+            await onViewPdf(); // Call the passed handler
         } catch (error) {
-            console.error("Error generating or viewing PDF:", error);
-            toast({ variant: "destructive", title: "PDF Error", description: "Failed to generate or view PDF report." });
+            console.error("Error in onViewPdf prop:", error);
+            toast({ variant: "destructive", title: "PDF Error", description: "Failed to view PDF report." });
         } finally {
             setIsPdfGenerating(false);
         }
     };
 
-    const handleDownloadPdf = async () => {
+    const handleDownloadPdfClick = async () => {
         if (!result || !imageUri || isPdfGenerating) return;
          setIsPdfGenerating(true);
-         toast({ title: "Generating PDF", description: "Preparing download..." }); // Inform user
         try {
-            // Use async generation if it becomes complex
-            await new Promise(resolve => setTimeout(resolve, 50)); // Simulate short delay/allow UI update
-             const doc = generatePdfReport(result, questionnaireData, imageUri);
-             // Use the existing downloadPdf utility function that takes data URI
-              downloadPdf(doc.output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+             await onDownloadPdf(); // Call the passed handler
         } catch (error) {
-             console.error("Error generating or downloading PDF:", error);
-            toast({ variant: "destructive", title: "PDF Error", description: "Failed to generate or download PDF report." });
+             console.error("Error in onDownloadPdf prop:", error);
+            toast({ variant: "destructive", title: "PDF Error", description: "Failed to download PDF report." });
         } finally {
             setIsPdfGenerating(false);
         }
@@ -236,7 +222,7 @@ export function ResultsPopupModal({
                     {!loading && !apiError && result && !isErrorResult && imageUri && (
                         <div className="flex gap-2 w-full sm:w-auto">
                             <Button
-                                onClick={handleViewPdf}
+                                onClick={handleViewPdfClick} // Use the new handler
                                 variant="secondary"
                                 disabled={isPdfGenerating}
                                 className="flex-1 sm:flex-none" // Ensure buttons fit on mobile
@@ -245,7 +231,7 @@ export function ResultsPopupModal({
                                 View Report
                             </Button>
                             <Button
-                                onClick={handleDownloadPdf}
+                                onClick={handleDownloadPdfClick} // Use the new handler
                                 variant="default"
                                 disabled={isPdfGenerating}
                                 className="flex-1 sm:flex-none" // Ensure buttons fit on mobile
@@ -261,3 +247,4 @@ export function ResultsPopupModal({
     );
 }
 
+    

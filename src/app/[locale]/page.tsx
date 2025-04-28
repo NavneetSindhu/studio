@@ -474,7 +474,7 @@ export default function Home() {
 
        setPastReports(prevReports => {
             const updatedReports = [newReport, ...prevReports];
-            const MAX_REPORTS_IN_MEMORY = 10;
+            const MAX_REPORTS_IN_MEMORY = 10; // Limit reports stored in memory/state
             return updatedReports.slice(0, MAX_REPORTS_IN_MEMORY);
        });
    };
@@ -726,6 +726,12 @@ export default function Home() {
    };
 
 
+  // --- Scroll to Past Reports Section ---
+  const scrollToPastReports = () => {
+    const pastReportsSection = document.getElementById('past-reports');
+    pastReportsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
 
   const scrollToUpload = () => {
     uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -751,6 +757,16 @@ export default function Home() {
                        </Button>
                        <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
                            <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
+                       </Button>
+                       {/* Button to access Past Reports */}
+                       <Button
+                           variant="ghost"
+                           size="sm"
+                           className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground flex items-center gap-1"
+                           onClick={scrollToPastReports} // Scroll to past reports section
+                           disabled={pastReports.length === 0} // Disable if no reports
+                        >
+                          <History className="h-4 w-4" /> Past Reports
                        </Button>
                   </div>
 
@@ -941,7 +957,12 @@ export default function Home() {
             loading={loading} // Pass loading state
             apiError={apiError} // Pass error state
             onFindClinics={handleFindClinics} // Pass clinic search trigger
+             // Pass handlers for PDF actions
+             onViewPdf={async () => { if (result && imagePreview) viewPdf(generatePdfReport(result, questionnaireData, imagePreview)); }}
+             onDownloadPdf={async () => { if (result && imagePreview) downloadPdf(generatePdfReport(result, questionnaireData, imagePreview).output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`); }}
         />
     </div>
   );
 }
+
+    
