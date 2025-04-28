@@ -2,13 +2,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image"; // Use next/image for optimization
 import { classifyImage, ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
 import { chatWithBot, ChatInput, ChatOutput } from "@/ai/flows/chat-flow"; // Import chat flow
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2 } from "lucide-react"; // Added MessageSquare, Loader2
+import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2, Leaf, ChevronRight } from "lucide-react"; // Added Leaf, ChevronRight
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
@@ -19,26 +20,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal";
 
-// Placeholder skin conditions data (replace with actual data structure if needed)
+// Placeholder skin conditions data (updated with new card styles)
 const skinConditions = [
-    { name: "Acne", description: "Pimples, blackheads, oily skin.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><circle cx="12" cy="8" r="1"/><circle cx="10" cy="13" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="12" cy="17" r="1"/><path d="M12 2a10 10 0 1 0 10 10 A10 10 0 0 0 12 2z"/></svg> },
-    { name: "Eczema", description: "Itchy, red, inflamed skin patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12 2c-3 0-5 2-8 2s-5-2-8-2c-3 0-5 2-5 5s2 5 5 5c0 3-2 5-2 8s2 5 5 5 5-2 8-2 5 2 8 2 5-2 5-5-2-5-2-8 2-5 5-5-2-5-5-5c-3 0-5 2-8 2s-5-2-8-2z"/><path d="M14 14a2 2 0 1 0-4 0 2 2 0 0 0 4 0z"/><path d="M10 10c.5-1 2-2 4-2"/><path d="M14 10c-.5 1-2 2-4 2"/></svg> },
-    { name: "Psoriasis", description: "Red, scaly patches, often on joints.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12 14c-4.5 0-8-3.5-8-8s3.5-8 8-8 8 3.5 8 8-3.5 8-8 8z"/><path d="M12 14c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z"/><path d="M12 22c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8z"/></svg> },
-    { name: "Vitiligo", description: "Loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
-    { name: "Melanoma", description: "Serious skin cancer; unusual moles.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
+    { name: "Acne", description: "Common condition with pimples, blackheads.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><circle cx="12" cy="8" r="1"/><circle cx="10" cy="13" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="12" cy="17" r="1"/><path d="M12 2a10 10 0 1 0 10 10 A10 10 0 0 0 12 2z"/></svg> },
+    { name: "Eczema", description: "Causes itchy, red, inflamed skin patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2c-3 0-5 2-8 2s-5-2-8-2c-3 0-5 2-5 5s2 5 5 5c0 3-2 5-2 8s2 5 5 5 5-2 8-2 5 2 8 2 5-2 5-5-2-5-2-8 2-5 5-5-2-5-5-5c-3 0-5 2-8 2s-5-2-8-2z"/><path d="M14 14a2 2 0 1 0-4 0 2 2 0 0 0 4 0z"/><path d="M10 10c.5-1 2-2 4-2"/><path d="M14 10c-.5 1-2 2-4 2"/></svg> },
+    { name: "Psoriasis", description: "Autoimmune issue with red, scaly patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 14c-4.5 0-8-3.5-8-8s3.5-8 8-8 8 3.5 8 8-3.5 8-8 8z"/><path d="M12 14c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z"/><path d="M12 22c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8z"/></svg> },
+    { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
+    { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive opacity-70"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
 ];
 
-// Define the diseases for the scrolling list
+
+// --- Scrolling Disease List Component (Keep as is) ---
 const scrollingDiseaseList = [
   "Acne", "Eczema", "Psoriasis", "Melanoma", "Rosacea",
   "Dermatitis", "Hives", "Ringworm", "Cellulitis", "Seborrheic Dermatitis"
 ];
-
-// --- Scrolling Disease List Component ---
 function ScrollingDiseaseList() {
-    // Duplicate the list for seamless looping
     const extendedList = [...scrollingDiseaseList, ...scrollingDiseaseList];
-
     return (
         <div className="w-full overflow-hidden bg-secondary/50 py-3 my-12 relative border-y border-border">
             <div className="animate-scrollRightToLeft flex whitespace-nowrap">
@@ -53,8 +51,7 @@ function ScrollingDiseaseList() {
     );
 }
 
-
-// --- Image Upload Component ---
+// --- Image Upload Component (Keep as is) ---
 function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageUpload: (file: File | null) => void; loading: boolean; currentImagePreview: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +132,7 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
   );
 }
 
-// --- Result Display Component ---
+// --- Result Display Component (Keep as is) ---
 function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: ClassifyImageOutput | null; loading: boolean; apiError: string | null; onFindClinics: () => void }) {
     if (loading) {
       return (
@@ -237,7 +234,7 @@ function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: C
   );
 }
 
-// --- Chatbot Component ---
+// --- Chatbot Component (Keep as is) ---
 function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Array<{ text: string; sender: 'user' | 'bot' }>>([
@@ -302,7 +299,7 @@ function Chatbot() {
                                <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
                                <AvatarFallback>AI</AvatarFallback>
                             </Avatar>
-                             <CardTitle className="text-sm font-semibold">SkinSeva AI Assistant</CardTitle>
+                             <CardTitle className="text-sm font-semibold">SkinSewa AI Assistant</CardTitle>
                          </div>
                         <Button size="icon" variant="ghost" onClick={toggleChat} className="h-6 w-6">
                             <XCircle className="h-4 w-4" />
@@ -430,12 +427,13 @@ export default function Home() {
             console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData, isClear: isClearImage, hasHumanSkin: hasHumanSkinContent });
 
             if (!isClearImage || !hasHumanSkinContent) {
-                setApiError("Image error. Upload clear human skin image.");
+                const errorMsg = "Image error. Upload clear human skin image.";
+                setApiError(errorMsg);
                 setLoading(false);
                  toast({
                     variant: "destructive",
                     title: "Image Quality Issue",
-                    description: "Image error. Upload clear human skin image.",
+                    description: errorMsg,
                   });
                 return;
             }
@@ -449,26 +447,29 @@ export default function Home() {
                 });
                 console.log("API Response:", apiResult);
 
-                 if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
-                     // Check for specific error messages from the flow
-                     if (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin")) {
-                         setApiError(apiResult.predictedDisease);
-                         setResult(null);
-                          toast({
-                            variant: "destructive",
-                            title: "Analysis Issue",
-                            description: apiResult.predictedDisease,
-                           });
-                     } else {
-                         setResult(apiResult);
-                         console.log("Classification successful:", apiResult);
-                         const resultElement = document.getElementById('result-section');
-                         resultElement?.scrollIntoView({ behavior: "smooth", block: "center" });
-                     }
+                 // Check for specific error messages related to image quality from the flow itself
+                 if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
+                     setApiError(apiResult.predictedDisease);
+                     setResult(null);
+                      toast({
+                        variant: "destructive",
+                        title: "Analysis Issue",
+                        description: apiResult.predictedDisease,
+                       });
+                } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
+                    setResult(apiResult);
+                    console.log("Classification successful:", apiResult);
+                    const resultElement = document.getElementById('result-section');
+                    resultElement?.scrollIntoView({ behavior: "smooth", block: "center" });
                  } else {
                      console.error("Invalid API response structure:", apiResult);
                      setApiError("Received an unexpected result from the analysis service.");
                      setResult(null);
+                     toast({
+                        variant: "destructive",
+                        title: "Analysis Error",
+                        description: "Received an unexpected result from the analysis service.",
+                      });
                  }
 
             } catch (innerError: any) {
@@ -519,7 +520,7 @@ export default function Home() {
   };
 
 
-   // --- Find Clinics Logic ---
+   // --- Find Clinics Logic (Keep as is) ---
    const handleFindClinics = () => {
      setClinicLoading(true);
      setClinicError(null);
@@ -608,42 +609,61 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
-      {/* Navigation Bar */}
-      <nav className="w-full py-2 bg-card shadow-sm sticky top-0 z-50 border-b">
-        <div className="container mx-auto flex items-center justify-between px-4">
-           <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-primary hover:opacity-90 transition-opacity">
-             <HeartPulse className="h-6 w-6" />
-             <span>SkinSeva</span>
-          </Link>
-           <span className="text-muted-foreground text-sm hidden md:inline">स्वस्थ जीवन सुखी जीवन</span>
-          <div className="flex items-center space-x-1 md:space-x-2">
-              <Button variant="ghost" asChild size="sm">
-                 <Link href="/" className="text-sm">Home</Link>
-              </Button>
-              <span className="text-muted-foreground/30 hidden md:inline">|</span>
-              <Button variant="ghost" asChild size="sm">
-                 <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
-              </Button>
-              <div className="flex items-center space-x-1 pl-2 border-l border-border ml-2">
-                 <LanguageToggle />
-                 <ThemeToggle />
-              </div>
-               {/* Mobile Menu Trigger (placeholder) */}
-              <div className="md:hidden">
-                 <Button variant="ghost" size="icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-                 </Button>
+
+      {/* Enhanced Header */}
+      <nav className="w-full py-3 bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
+          <div className="container mx-auto flex items-center justify-between px-4 relative">
+              <Link href="/" className="flex items-center space-x-2 text-3xl font-bold hover:opacity-90 transition-opacity">
+                  <span>Skin</span><span className="header-logo-sewa">Sewa</span>
+              </Link>
+              <span className="text-sm opacity-80 absolute left-1/2 -translate-x-1/2 hidden lg:inline">{/* Adjusted slogan position */}
+                  स्वस्थ जीवन सुखी जीवन
+              </span>
+              <div className="flex items-center space-x-2 md:space-x-4">
+                   {/* Navigation Links */}
+                  <div className="hidden md:flex items-center space-x-4">
+                      <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+                         <Link href="/" className="text-sm flex items-center gap-1"><Leaf className="h-4 w-4 text-accent"/>Home</Link>
+                      </Button>
+                      <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+                         <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
+                      </Button>
+                      {/* Add other links like About, Contact if needed */}
+                  </div>
+
+                  {/* Doctor Image (Positioned Absolutely) */}
+                 <div className="absolute right-0 top-full md:top-0 h-20 w-20 md:h-28 md:w-28 pointer-events-none -mr-2 md:mr-0 md:mt-0 z-10">
+                     <Image
+                       src="https://picsum.photos/seed/doctor/200" // Placeholder Doctor Image
+                       alt="Doctor Illustration"
+                       layout="fill"
+                       objectFit="contain"
+                       className="drop-shadow-lg"
+                     />
+                 </div>
+
+                  {/* Toggles - positioned before doctor on small screens? */}
+                 <div className="flex items-center space-x-1 md:space-x-2 md:pl-4 md:border-l border-primary-foreground/20 md:ml-4">
+                     <LanguageToggle />
+                     <ThemeToggle />
+                 </div>
+
+                  {/* Mobile Menu Trigger (Adjust as needed) */}
+                  <div className="md:hidden">
+                     <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                     </Button>
+                  </div>
               </div>
           </div>
-        </div>
       </nav>
 
-      {/* Hero Section */}
-       <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-primary/70 via-primary/50 to-secondary/60 dark:from-primary/50 dark:via-primary/40 dark:to-secondary/40 text-white px-4 overflow-hidden">
+      {/* Hero Section - Adjusted for new color scheme */}
+       <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-primary/90 via-primary/70 to-secondary/60 dark:from-primary/70 dark:via-primary/50 dark:to-secondary/40 text-primary-foreground px-4 overflow-hidden">
          <div className="absolute inset-0 opacity-10 bg-[url('/hero-background.svg')] bg-cover bg-center"></div>
          <div className="relative z-10 max-w-4xl mx-auto">
-           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-primary-foreground drop-shadow-lg">Understand Your Skin Better with AI</h1>
-           <p className="text-lg md:text-xl lg:text-2xl mb-8 text-primary-foreground/90 drop-shadow-md max-w-2xl mx-auto">Get a preliminary analysis by answering questions or uploading an image.</p>
+           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-lg">Understand Your Skin Better with AI</h1>
+           <p className="text-lg md:text-xl lg:text-2xl mb-8 opacity-90 drop-shadow-md max-w-2xl mx-auto">Get a preliminary analysis by answering questions or uploading an image.</p>
            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <QuestionnaireModal onSave={handleQuestionnaireSubmit}>
                  <Button size="lg" variant="secondary" className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-8 py-3 text-lg shadow-lg transition-all duration-300 transform hover:scale-105">
@@ -651,7 +671,7 @@ export default function Home() {
                     Assess Your Skin
                  </Button>
               </QuestionnaireModal>
-             <Button size="lg" variant="outline" onClick={scrollToUpload} className="bg-white/20 text-white border-white/50 hover:bg-white/30 hover:border-white/70 rounded-full px-8 py-3 text-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+             <Button size="lg" variant="outline" onClick={scrollToUpload} className="bg-white/90 text-primary border-primary/30 hover:bg-white hover:border-primary/50 rounded-full px-8 py-3 text-lg shadow-lg transition-all duration-300 transform hover:scale-105">
                 <Upload className="mr-2 h-5 w-5"/>
                 Upload Image
              </Button>
@@ -662,17 +682,29 @@ export default function Home() {
        {/* Scrolling Disease List */}
        <ScrollingDiseaseList />
 
-      {/* Categories Section */}
+      {/* Categories Section - Updated Card Styles */}
       <section id="conditions" className="container mx-auto py-16 px-4">
         <h2 className="text-3xl font-semibold text-center mb-4">Common Conditions We Analyze</h2>
          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {skinConditions.map((condition) => (
-            <Card key={condition.name} className="text-center hover:shadow-lg transition-shadow duration-300 border border-border rounded-lg overflow-hidden bg-card flex flex-col items-center justify-start pt-6 pb-4 px-4 h-full">
-               <div className="mb-3 flex-shrink-0">{condition.icon}</div>
-               <CardTitle className="text-lg mb-1 font-medium">{condition.name}</CardTitle>
-               <CardDescription className="text-sm leading-relaxed flex-grow">{condition.description}</CardDescription>
-            </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"> {/* Adjusted grid for 3 cards */}
+          {skinConditions.slice(0, 3).map((condition, index) => ( // Display only first 3 for example
+             <Card key={condition.name} className={cn(
+                "condition-card text-left hover:shadow-xl transition-shadow duration-300 border-l-4 rounded-lg overflow-hidden bg-card flex flex-col justify-between p-6 h-full relative group",
+                 // Specific accent color classes applied via CSS based on index (see globals.css)
+             )}>
+                <div>
+                    <CardTitle className="text-xl mb-2 font-semibold text-card-foreground">{condition.name}</CardTitle>
+                    <CardDescription className="text-sm leading-relaxed text-card-foreground/80 mb-4">{condition.description}</CardDescription>
+                </div>
+                 <div className="flex items-end justify-between mt-4">
+                    <div className="absolute bottom-4 left-4 text-current"> {/* Icon bottom left */}
+                        {condition.icon}
+                    </div>
+                    <Link href="/skin-info" className="absolute bottom-4 right-4 h-8 w-8 rounded-full bg-current text-card flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                         <ChevronRight className="h-5 w-5" />
+                     </Link>
+                 </div>
+             </Card>
           ))}
         </div>
       </section>
@@ -715,7 +747,7 @@ export default function Home() {
       {/* Educational Section */}
        <section className="w-full bg-secondary dark:bg-secondary/50 py-16">
          <div className="container mx-auto px-4 text-center">
-             <h2 className="text-3xl font-semibold mb-4">Why Use SkinSeva AI?</h2>
+             <h2 className="text-3xl font-semibold mb-4">Why Use SkinSewa AI?</h2>
              <p className="text-muted-foreground max-w-3xl mx-auto mb-10">Gain preliminary insights and awareness about potential skin conditions. Remember to consult a professional.</p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                <Card className="bg-card shadow-md text-left p-6 rounded-lg">
@@ -738,7 +770,7 @@ export default function Home() {
       <footer className="w-full py-8 bg-card text-muted-foreground border-t mt-16">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center px-4 text-center md:text-left">
           <div className="text-xs mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} SkinSeva. All Rights Reserved. <br/>
+            &copy; {new Date().getFullYear()} SkinSewa. All Rights Reserved. <br/>
             <span className="text-destructive font-semibold">Disclaimer: This tool is for informational purposes only and does not provide medical advice.</span>
           </div>
           <div className="flex space-x-4">
@@ -761,5 +793,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

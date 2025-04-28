@@ -1,105 +1,96 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    /* Calming Blue/Green Theme */
-    --background: 210 40% 98%; /* Very Light Blue-Gray */
-    --foreground: 215 25% 27%; /* Dark Slate Blue */
+    /* Light Theme - New Palette */
+    --background: 210 40% 98%; /* Light Grey/Off-white base */
+    --foreground: 210 10% 23%; /* Dark Grey */
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 10% 23%; /* Dark Grey */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 10% 23%; /* Dark Grey */
 
-    --primary: 195 53% 49%; /* Steel Blue */
+    --primary: 180 60% 29%; /* Dark Teal/Green */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 145 45% 94%; /* Pale Mint Green */
-    --secondary-foreground: 145 40% 30%; /* Darker Mint */
+    --secondary: 210 40% 96%; /* Light Grey */
+    --secondary-foreground: 180 60% 29%; /* Dark Teal/Green */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 20% 65%; /* Lighter Slate */
+    --muted: 210 40% 96%; /* Light Grey */
+    --muted-foreground: 210 8% 45%; /* Medium Grey */
 
-    --accent: 350 78% 58%; /* Vibrant Coral - for CTAs */
-    --accent-foreground: 0 0% 100%; /* White */
+    --accent: 45 100% 51%; /* Bright Orange-Yellow */
+    --accent-foreground: 210 10% 15%; /* Dark Grey for contrast */
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%; /* Standard Red */
+    --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 210 40% 90%; /* Light Blue-Gray Border */
-    --input: 210 40% 93%; /* Slightly darker input background */
-    --ring: 195 53% 49%; /* Steel Blue for focus rings */
+    --border: 210 20% 88%; /* Light Grey Border */
+    --input: 210 20% 94%; /* Very Light Grey */
+    --ring: 180 60% 29%; /* Dark Teal/Green for focus rings */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 215 25% 27%;
-    --sidebar-primary: 195 53% 49%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 145 45% 94%;
-    --sidebar-accent-foreground: 145 40% 30%;
-    --sidebar-border: 210 40% 90%;
-    --sidebar-ring: 195 53% 49%;
+    /* Custom Card Accent Colors */
+    --card-accent-1: 15 70% 60%; /* Muted Red-Orange */
+    --card-accent-2: 270 50% 80%; /* Pastel Blue-Purple */
+    --card-accent-3: 45 100% 51%; /* Bright Orange-Yellow (same as accent) */
 
-    --chart-1: 195 53% 49%; /* Primary */
-    --chart-2: 145 45% 60%; /* Secondary derived */
-    --chart-3: 350 78% 58%; /* Accent */
-    --chart-4: 210 30% 60%; /* Muted derived */
-    --chart-5: 45 70% 55%;  /* Warm Neutral */
+    /* Chart colors (using new palette) */
+    --chart-1: 180 60% 29%; /* Dark Teal */
+    --chart-2: 45 100% 51%; /* Orange-Yellow */
+    --chart-3: 15 70% 60%; /* Red-Orange */
+    --chart-4: 270 50% 80%; /* Blue-Purple */
+    --chart-5: 210 8% 45%; /* Medium Grey */
   }
 
   .dark {
-    /* Dark Theme - Adjust as needed for contrast */
-    --background: 215 28% 17%; /* Dark Slate Blue */
-    --foreground: 210 40% 98%; /* Light Blue-Gray */
+    /* Dark Theme - New Palette */
+    --background: 210 20% 10%; /* Very Dark Grey/Blue */
+    --foreground: 210 40% 98%; /* Light Grey/Off-white */
 
-    --card: 215 28% 21%; /* Slightly Lighter Dark */
-    --card-foreground: 210 40% 98%;
+    --card: 210 15% 16%; /* Darker Grey/Blue */
+    --card-foreground: 210 40% 98%; /* Light Grey/Off-white */
 
-    --popover: 215 28% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 15% 16%; /* Darker Grey/Blue */
+    --popover-foreground: 210 40% 98%; /* Light Grey/Off-white */
 
-    --primary: 195 53% 55%; /* Lighter Steel Blue */
-    --primary-foreground: 215 28% 17%; /* Dark Background for contrast */
+    --primary: 180 50% 45%; /* Lighter Teal for contrast */
+    --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 145 30% 25%; /* Dark Mint */
-    --secondary-foreground: 145 45% 94%; /* Pale Mint Green */
+    --secondary: 210 15% 28%; /* Medium Dark Grey/Blue */
+    --secondary-foreground: 210 40% 98%; /* Light Grey/Off-white */
 
-    --muted: 215 28% 25%; /* Darker Muted */
-    --muted-foreground: 215 20% 65%;
+    --muted: 210 15% 28%; /* Medium Dark Grey/Blue */
+    --muted-foreground: 210 10% 65%; /* Lighter Grey */
 
-    --accent: 350 78% 65%; /* Lighter Coral */
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 100% 51%; /* Bright Orange-Yellow */
+    --accent-foreground: 210 10% 15%; /* Dark Grey for contrast */
 
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 63% 50%; /* Slightly desaturated Red */
+    --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 215 28% 28%; /* Darker Border */
-    --input: 215 28% 23%;
-    --ring: 195 53% 55%;
+    --border: 210 10% 35%; /* Darker Grey Border */
+    --input: 210 10% 35%; /* Darker Input Background */
+    --ring: 180 50% 45%; /* Lighter Teal Ring */
 
-    --sidebar-background: 215 28% 17%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 195 53% 55%;
-    --sidebar-primary-foreground: 215 28% 17%;
-    --sidebar-accent: 145 30% 25%;
-    --sidebar-accent-foreground: 145 45% 94%;
-    --sidebar-border: 215 28% 28%;
-    --sidebar-ring: 195 53% 55%;
+    --radius: 0.5rem;
 
-    --chart-1: 195 53% 55%;
-    --chart-2: 145 45% 70%;
-    --chart-3: 350 78% 65%;
-    --chart-4: 210 30% 70%;
-    --chart-5: 45 70% 65%;
+    /* Custom Card Accent Colors */
+    --card-accent-1: 15 60% 55%; /* Muted Red-Orange */
+    --card-accent-2: 270 40% 70%; /* Pastel Blue-Purple */
+    --card-accent-3: 45 90% 50%; /* Bright Orange-Yellow */
+
+     /* Chart colors (using new palette) */
+    --chart-1: 180 50% 45%; /* Lighter Teal */
+    --chart-2: 45 100% 51%; /* Orange-Yellow */
+    --chart-3: 15 60% 55%; /* Red-Orange */
+    --chart-4: 270 40% 70%; /* Blue-Purple */
+    --chart-5: 210 10% 65%; /* Lighter Grey */
   }
 }
 
@@ -110,4 +101,33 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Additional style for the specific header implementation */
+.header-logo-sewa {
+    color: hsl(var(--accent)); /* Bright Orange-Yellow for 'Sewa' */
+}
+
+/* Assign card accent colors dynamically (example for 3 colors) */
+.condition-card:nth-child(3n+1) {
+    background-color: hsl(var(--card-accent-1) / 0.1); /* Red-Orange background tint */
+    border-color: hsl(var(--card-accent-1));
+}
+.condition-card:nth-child(3n+2) {
+     background-color: hsl(var(--card-accent-2) / 0.1); /* Blue-Purple background tint */
+     border-color: hsl(var(--card-accent-2));
+}
+.condition-card:nth-child(3n+3) {
+     background-color: hsl(var(--card-accent-3) / 0.1); /* Orange-Yellow background tint */
+     border-color: hsl(var(--card-accent-3));
+}
+
+.dark .condition-card:nth-child(3n+1) {
+    background-color: hsl(var(--card-accent-1) / 0.2); /* Dark mode tint */
+}
+.dark .condition-card:nth-child(3n+2) {
+     background-color: hsl(var(--card-accent-2) / 0.2); /* Dark mode tint */
+}
+.dark .condition-card:nth-child(3n+3) {
+     background-color: hsl(var(--card-accent-3) / 0.2); /* Dark mode tint */
 }
