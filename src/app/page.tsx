@@ -245,8 +245,8 @@ function Chatbot() {
         <div className="fixed bottom-4 right-4 z-50">
             {!isOpen ? (
                 <Button size="icon" onClick={toggleChat} className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
-                   <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
+                   <Avatar className="h-12 w-12">
+                      <AvatarImage src="https://www.shutterstock.com/image-vector/chat-bot-icon-virtual-smart-600nw-2478937553.jpg" alt="Chatbot Avatar" />
                       <AvatarFallback>AI</AvatarFallback>
                    </Avatar>
                 </Button>
@@ -254,14 +254,14 @@ function Chatbot() {
                 <Card className="w-80 shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between p-3 border-b">
                          <div className="flex items-center space-x-2">
-                            <Avatar className="h-6 w-6">
-                               <AvatarImage src="https://picsum.photos/seed/aichat/200" alt="Chatbot Avatar" />
+                            <Avatar className="h-10 w-10">
+                               <AvatarImage src="https://www.shutterstock.com/image-vector/chat-bot-icon-virtual-smart-600nw-2478937553.jpg" alt="Chatbot Avatar" />
                                <AvatarFallback>AI</AvatarFallback>
                             </Avatar>
                              <CardTitle className="text-sm font-semibold">SkinSeva AI Assistant</CardTitle>
                          </div>
                         <Button size="icon" variant="ghost" onClick={toggleChat} className="h-6 w-6">
-                            <XCircle className="h-4 w-4" />
+                            <XCircle className="h-10 w-10" />
                         </Button>
                     </CardHeader>
                     <CardContent className="h-64 overflow-y-auto p-3 space-y-2">

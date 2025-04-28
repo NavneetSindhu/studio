@@ -16,120 +16,143 @@ export const generatePdfReport = (
     questionnaireData: QuestionnaireData | null,
     imageUri: string
 ): jsPDF => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const pageHeight = doc.internal.pageSize.height;
     const pageWidth = doc.internal.pageSize.width;
-    let currentY = 20; // Starting Y position
+    const margin = 15;
+    let currentY = margin + 10; // Starting Y position with margin
+
+    // --- Helper function for adding text with page break check ---
+    const addTextWithWrap = (text: string, x: number, y: number, maxWidth: number, options?: any): number => {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        const textHeight = lines.length * (doc.getLineHeight() / doc.internal.scaleFactor);
+
+        if (y + textHeight > pageHeight - margin) {
+            doc.addPage();
+            y = margin + 10; // Reset Y on new page
+        }
+        doc.text(lines, x, y, options);
+        return y + textHeight + 2; // Return new Y position with padding
+    };
+
+    // --- Helper function for adding a separator line ---
+    const addSeparator = (y: number): number => {
+        if (y > pageHeight - margin) {
+            doc.addPage();
+            y = margin + 10;
+        }
+        doc.setDrawColor(200); // Light grey line
+        doc.line(margin, y, pageWidth - margin, y);
+        return y + 4; // Return new Y position with padding
+    };
 
     // --- Header ---
     doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
     doc.text("Skin Analysis Report", pageWidth / 2, currentY, { align: 'center' });
     currentY += 8;
     doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100); // Muted color
     doc.text(`Generated on: ${format(new Date(), 'PPP p')}`, pageWidth / 2, currentY, { align: 'center' });
+    doc.setTextColor(0); // Reset color
     currentY += 15;
 
     // --- Patient Information ---
     doc.setFontSize(14);
-    doc.text("Patient Information", 15, currentY);
-    currentY += 8;
+    doc.setFont(undefined, 'bold');
+    doc.text("Patient Information", margin, currentY);
+    currentY += 5;
+    currentY = addSeparator(currentY);
     doc.setFontSize(11);
-    doc.line(15, currentY - 4, pageWidth - 15, currentY - 4); // Separator line
+    doc.setFont(undefined, 'normal');
 
-    const patientInfo = [
-        `Age: ${questionnaireData?.age ?? 'Not Provided'}`,
-        `Gender: ${questionnaireData?.gender ?? 'Not Provided'}`,
-        `Complexion: ${questionnaireData?.complexion ?? 'Not Provided'}`,
-        `Symptoms: ${questionnaireData?.symptoms ?? 'Not Provided'}`,
-        `Products Used: ${questionnaireData?.products || 'Not Provided'}`,
-    ];
-
-    patientInfo.forEach(info => {
-        if (currentY > pageHeight - 20) { // Check for page break
-             doc.addPage();
-             currentY = 20;
-        }
-        doc.text(info, 20, currentY);
-        currentY += 7;
-    });
-    currentY += 10; // Extra space
+    currentY = addTextWithWrap(`Age: ${questionnaireData?.age ?? 'Not Provided'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY = addTextWithWrap(`Gender: ${questionnaireData?.gender ?? 'Not Provided'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY = addTextWithWrap(`Complexion: ${questionnaireData?.complexion ?? 'Not Provided'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY = addTextWithWrap(`Reported Symptoms: ${questionnaireData?.symptoms ?? 'Not Provided'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY = addTextWithWrap(`Current Products Used: ${questionnaireData?.products || 'Not Provided'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY += 5; // Extra space
 
     // --- Analysis Results ---
     doc.setFontSize(14);
-    doc.text("Analysis Results", 15, currentY);
-    currentY += 8;
+    doc.setFont(undefined, 'bold');
+    doc.text("AI Analysis Results", margin, currentY);
+    currentY += 5;
+    currentY = addSeparator(currentY);
     doc.setFontSize(11);
-    doc.line(15, currentY - 4, pageWidth - 15, currentY - 4); // Separator line
+    doc.setFont(undefined, 'normal');
 
-    const analysisDetails = [
-        `Predicted Condition: ${result.predictedDisease}`,
-        `Confidence Score: ${result.confidencePercentage.toFixed(1)}%`,
-        `AI Notes: ${result.notes || 'None'}`,
-    ];
-
-     analysisDetails.forEach(info => {
-        if (currentY > pageHeight - 20) { // Check for page break
-             doc.addPage();
-             currentY = 20;
-        }
-        // Handle potential line breaks for long notes
-        const splitNotes = doc.splitTextToSize(info, pageWidth - 40);
-        doc.text(splitNotes, 20, currentY);
-        currentY += (splitNotes.length * 5) + 2; // Adjust Y based on number of lines
-    });
-     currentY += 5;
-
+    currentY = addTextWithWrap(`Predicted Condition: ${result.predictedDisease}`, margin + 5, currentY, pageWidth - margin * 2 - 10, { fontStyle: 'bold' });
+    currentY = addTextWithWrap(`Confidence Score: ${result.confidencePercentage.toFixed(1)}%`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY = addTextWithWrap(`AI Notes: ${result.notes || 'None'}`, margin + 5, currentY, pageWidth - margin * 2 - 10);
+    currentY += 5;
 
     // --- Disclaimer ---
-     if (currentY > pageHeight - 40) { // Check space for disclaimer and image
-        doc.addPage();
-        currentY = 20;
-     }
-    doc.setFontSize(10);
+    currentY = addSeparator(currentY);
+    doc.setFontSize(9);
     doc.setTextColor(150); // Grey color
-    const disclaimer = "Disclaimer: This report is generated by an AI assistant for informational purposes only and does not constitute a medical diagnosis. Always consult a qualified healthcare professional for accurate diagnosis and treatment.";
-    const splitDisclaimer = doc.splitTextToSize(disclaimer, pageWidth - 30);
-    doc.text(splitDisclaimer, 15, currentY);
-    currentY += (splitDisclaimer.length * 5) + 10;
+    const disclaimer = "Disclaimer: This report is generated by an AI assistant for informational purposes only and does not constitute a medical diagnosis. It is crucial to consult a qualified healthcare professional (e.g., dermatologist) for an accurate diagnosis, treatment plan, and any medical advice.";
+    currentY = addTextWithWrap(disclaimer, margin, currentY, pageWidth - margin * 2, { fontStyle: 'italic' });
+    doc.setTextColor(0); // Reset color
 
-     // --- Uploaded Image ---
-     if (currentY > pageHeight - 70) { // Check space for image
+    // --- Uploaded Image ---
+    if (currentY > pageHeight - 80) { // Check space for image section header + image
         doc.addPage();
-        currentY = 20;
-     }
+        currentY = margin + 10;
+    }
+    currentY += 10;
     doc.setFontSize(14);
-    doc.setTextColor(0); // Reset text color
-    doc.text("Uploaded Image", 15, currentY);
-    currentY += 8;
-    doc.line(15, currentY - 4, pageWidth - 15, currentY - 4);
+    doc.setFont(undefined, 'bold');
+    doc.text("Uploaded Image", margin, currentY);
+    currentY += 5;
+    currentY = addSeparator(currentY);
+    doc.setFont(undefined, 'normal');
 
     try {
-        // Add the image - adjust width/height as needed
-        // Max width/height to fit page, maintain aspect ratio
+        // Center the image, max width 80mm, maintain aspect ratio
         const imgProps = doc.getImageProperties(imageUri);
-        const imgWidth = 60; // Fixed width for the image
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        const imgX = (pageWidth - imgWidth) / 2; // Center image
+        const maxWidth = 80;
+        const maxHeight = 80; // Also limit height
+        let imgWidth = imgProps.width;
+        let imgHeight = imgProps.height;
 
-        if (currentY + imgHeight > pageHeight - 15) { // Check if image fits
-            doc.addPage();
-            currentY = 20;
+        if (imgWidth > maxWidth) {
+            imgHeight = (imgHeight * maxWidth) / imgWidth;
+            imgWidth = maxWidth;
         }
-        doc.addImage(imageUri, 'JPEG', imgX, currentY, imgWidth, imgHeight);
+        if (imgHeight > maxHeight) {
+             imgWidth = (imgWidth * maxHeight) / imgHeight;
+             imgHeight = maxHeight;
+        }
+
+
+        const imgX = (pageWidth - imgWidth) / 2; // Center image horizontally
+
+        if (currentY + imgHeight > pageHeight - margin) { // Check if image fits
+            doc.addPage();
+            currentY = margin + 10; // Reset Y on new page for the image
+        }
+        doc.addImage(imageUri, imgProps.fileType, imgX, currentY, imgWidth, imgHeight);
         currentY += imgHeight + 10;
     } catch (error) {
         console.error("Error adding image to PDF:", error);
-        if (currentY > pageHeight - 20) {
+        if (currentY > pageHeight - margin - 10) { // Check space for error message
             doc.addPage();
-            currentY = 20;
+            currentY = margin + 10;
         }
         doc.setTextColor(255, 0, 0); // Red color for error
-        doc.text("Error loading image.", 15, currentY);
-        currentY += 10;
+        currentY = addTextWithWrap("Error: Could not load the uploaded image into the PDF.", margin, currentY, pageWidth - margin * 2);
+        doc.setTextColor(0); // Reset color
     }
 
     // --- Footer (Page Number) ---
-    // Optional: Add page numbers if needed, especially for multi-page reports
+    const pageCount = doc.getNumberOfPages();
+    doc.setFontSize(8);
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - margin + 5, { align: 'right' });
+    }
 
     return doc;
 };
@@ -139,13 +162,35 @@ export const viewPdf = (doc: jsPDF) => {
   const pdfDataUri = doc.output('datauristring');
   const pdfWindow = window.open("");
   if (pdfWindow) {
-      pdfWindow.document.write(`<iframe width='100%' height='100%' src='${pdfDataUri}'></iframe>`);
+      pdfWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>SkinSewa Report Preview</title>
+              <style>
+                  body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+                  iframe { border: none; width: 100%; height: 100%; }
+              </style>
+          </head>
+          <body>
+              <iframe src='${pdfDataUri}'></iframe>
+          </body>
+          </html>
+      `);
+       pdfWindow.document.close(); // Important for some browsers
   } else {
-      alert("Could not open PDF viewer. Please ensure popups are allowed.");
+      alert("Could not open PDF viewer. Please ensure popups are allowed for this site."); // More user-friendly alert
   }
 };
 
 // Utility function to download the PDF
-export const downloadPdf = (doc: jsPDF, filename: string = "skin_analysis_report.pdf") => {
-  doc.save(filename);
+export const downloadPdf = (doc: jsPDF, filename: string = "SkinSewa_Report.pdf") => {
+  try {
+    doc.save(filename);
+  } catch (error) {
+    console.error("Error saving PDF:", error);
+    alert("Failed to download the PDF report. Please try again.");
+  }
 };
+
+    

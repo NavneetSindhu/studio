@@ -32,7 +32,7 @@ interface PastReport {
     confidencePercentage: number;
     imageUri: string; // Store image preview/thumbnail URI
     questionnaireSummary?: string; // Optional summary of questionnaire
-    // Add pdfDataUri to store the generated PDF data
+    // Add pdfDataUri to store the generated PDF data IN RUNTIME STATE
     pdfDataUri?: string;
 }
 
@@ -43,6 +43,13 @@ const skinConditions = [
     { name: "Psoriasis", description: "Autoimmune issue with red, scaly patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 14c-4.5 0-8-3.5-8-8s3.5-8 8-8 8 3.5 8 8-3.5 8-8 8z"/><path d="M12 14c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z"/><path d="M12 22c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8z"/></svg> },
     { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
     { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive opacity-70"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
+     // Adding the HAM10000 specific ones for better context in results
+    { name: "Actinic Keratosis (AKIEC)", description: "Rough, scaly patch on sun-exposed skin.", icon: <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400 opacity-70" /> },
+    { name: "Basal Cell Carcinoma (BCC)", description: "Pearly or waxy bump, or scar-like lesion.", icon: <AlertCircle className="h-8 w-8 text-destructive opacity-70" /> },
+    { name: "Benign Keratosis-like Lesions (BKL)", description: "Non-cancerous growths like seborrheic keratoses.", icon: <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400 opacity-70" /> },
+    { name: "Dermatofibroma (DF)", description: "Small, firm bump, often on lower legs.", icon: <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400 opacity-70" /> },
+    { name: "Melanocytic Nevi (NV)", description: "Common moles (typically benign).", icon: <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400 opacity-70" /> },
+    { name: "Vascular Lesions (VASC)", description: "Lesions related to blood vessels (e.g., cherry angiomas).", icon: <HeartPulse className="h-8 w-8 text-red-400 opacity-70" /> },
 ];
 
 // --- Scrolling Disease List Component (Keep as is) ---
@@ -257,10 +264,29 @@ function Chatbot() {
     );
 }
 
+
+// --- Type for report data stored in Session Storage (less data) ---
+interface StoredReportData {
+    id: string;
+    timestamp: number;
+    predictedDisease: string;
+    confidencePercentage: number;
+    imageUriPreview: string; // Smaller URI for storage efficiency
+    questionnaireSummary?: string;
+    // pdfDataUri is NOT stored here due to size limits
+}
+
 // --- Past Reports Section ---
 function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: PastReport[], onViewPdf: (report: PastReport) => void, onDownloadPdf: (report: PastReport) => void }) {
     if (!reports || reports.length === 0) {
-        return null; // Don't render if no reports
+        return (
+            <section id="past-reports" className="container mx-auto py-12 px-4">
+                <h2 className="text-3xl font-semibold text-center mb-4 flex items-center justify-center gap-2">
+                    <History className="h-7 w-7"/> Past Analysis Reports
+                </h2>
+                 <p className="text-center text-muted-foreground">No reports available yet.</p>
+            </section>
+        );
     }
 
     return (
@@ -285,18 +311,19 @@ function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: Pa
                         <CardContent className="p-3 pt-1">
                              <div className="aspect-square relative w-full bg-muted rounded overflow-hidden mb-2">
                                  <Image
-                                    src={report.imageUri}
+                                    src={report.imageUri} // Use the full URI stored in state for display
                                     alt={`Report ${report.id}`}
                                     layout="fill"
                                     objectFit="cover"
+                                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/placeholder/200'; }} // Fallback
                                  />
                              </div>
-                            <div className="flex gap-2 justify-end">
+                             <div className="flex gap-1 justify-end">
                                 <Button variant="outline" size="sm" onClick={() => onViewPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
-                                    <Eye className="h-3 w-3 mr-1"/> View
+                                    <Eye className="h-3 w-3 mr-1"/> View PDF
                                 </Button>
                                 <Button variant="default" size="sm" onClick={() => onDownloadPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
-                                    <Download className="h-3 w-3 mr-1"/> Download
+                                    <Download className="h-3 w-3 mr-1"/> DL PDF
                                 </Button>
                             </div>
                         </CardContent>
@@ -324,7 +351,7 @@ export default function Home() {
   const [clinicLoading, setClinicLoading] = useState(false);
   const [clinicError, setClinicError] = useState<string | null>(null);
   const [isResultsPopupOpen, setIsResultsPopupOpen] = useState(false);
-  const [pastReports, setPastReports] = useState<PastReport[]>([]); // State for past reports
+  const [pastReports, setPastReports] = useState<PastReport[]>([]); // State for past reports (includes full image URI and pdfDataUri)
 
 
   const uploadSectionRef = useRef<HTMLElement>(null);
@@ -333,9 +360,18 @@ export default function Home() {
   // --- Load past reports from session storage on mount ---
   useEffect(() => {
     try {
-      const storedReports = sessionStorage.getItem('pastSkinReports');
-      if (storedReports) {
-        setPastReports(JSON.parse(storedReports));
+      const storedReportsJson = sessionStorage.getItem('pastSkinReports');
+      if (storedReportsJson) {
+          const storedReportsData: StoredReportData[] = JSON.parse(storedReportsJson);
+           // Convert stored data (without full image/PDF) back to PastReport format
+           // We need to re-generate PDF URIs if needed, or handle missing PDFs gracefully
+           const loadedReports: PastReport[] = storedReportsData.map(storedReport => ({
+                ...storedReport,
+                imageUri: storedReport.imageUriPreview, // Use the stored preview URI
+                pdfDataUri: undefined, // PDF data is not stored, needs regeneration if view/download is clicked later
+           }));
+           setPastReports(loadedReports);
+           console.log("Loaded past reports from session storage.");
       }
     } catch (e) {
         console.error("Failed to load past reports from session storage:", e);
@@ -346,21 +382,20 @@ export default function Home() {
   // --- Save past reports to session storage when they change ---
    useEffect(() => {
     try {
-        // Only store essential data to avoid large session storage usage
-        const reportsToStore = pastReports.map(r => ({
+        // Convert PastReport state (with full URIs) to StoredReportData (smaller URIs) for storage
+        const reportsToStore: StoredReportData[] = pastReports.map(r => ({
              id: r.id,
              timestamp: r.timestamp,
              predictedDisease: r.predictedDisease,
              confidencePercentage: r.confidencePercentage,
-             // Store a smaller preview or omit full image/pdf URI for session storage efficiency
-             imageUri: r.imageUri.substring(0, 100) + '...', // Example: Store truncated URI
+             imageUriPreview: r.imageUri.substring(0, 100) + '...', // Store truncated URI or a placeholder
              questionnaireSummary: r.questionnaireSummary,
-             // pdfDataUri: r.pdfDataUri // Maybe omit PDF data URI from session storage
+             // pdfDataUri is intentionally omitted from session storage
         }));
         sessionStorage.setItem('pastSkinReports', JSON.stringify(reportsToStore));
+         console.log("Saved past reports overview to session storage.");
     } catch (e) {
         console.error("Failed to save past reports to session storage:", e);
-        // Handle potential storage full errors etc.
         toast({ variant: "destructive", title: "Storage Error", description: "Could not save report history. Storage might be full." });
     }
   }, [pastReports, toast]); // Add toast to dependencies
@@ -398,17 +433,17 @@ export default function Home() {
   };
 
 
-   // --- Function to add a report to past reports ---
+   // --- Function to add a report to past reports state ---
    const addPastReport = async (reportData: ClassifyImageOutput, qData: QuestionnaireData | null, imgUri: string) => {
        const reportId = `report-${Date.now()}`; // Simple unique ID
        const timestamp = Date.now();
 
        let pdfDataUri: string | undefined = undefined;
        try {
-           // Generate PDF immediately to store its data URI
+           // Generate PDF immediately when the analysis is done
            const doc = generatePdfReport(reportData, qData, imgUri);
-           pdfDataUri = doc.output('datauristring');
-           console.log("Generated PDF for report", reportId);
+           pdfDataUri = doc.output('datauristring'); // Generate the data URI
+           console.log("Generated PDF Data URI for report", reportId);
        } catch (pdfError) {
            console.error("Failed to generate PDF for past report:", pdfError);
            toast({ variant: "destructive", title: "PDF Generation Failed", description: "Could not generate PDF for this report." });
@@ -420,17 +455,18 @@ export default function Home() {
            timestamp: timestamp,
            predictedDisease: reportData.predictedDisease,
            confidencePercentage: reportData.confidencePercentage,
-           imageUri: imgUri, // Store the image data URI
+           imageUri: imgUri, // Store the full image data URI in the runtime state
            questionnaireSummary: qData ? `Age: ${qData.age ?? 'N/A'}, Symptom: ${qData.symptoms ?? 'N/A'}` : undefined,
-           pdfDataUri: pdfDataUri, // Store the PDF data
+           pdfDataUri: pdfDataUri, // Store the generated PDF data URI in the runtime state
        };
 
+        // Add the new report with the PDF data to the state
        setPastReports(prevReports => {
             const updatedReports = [newReport, ...prevReports];
-            // Optional: Limit the number of stored reports
-            // const MAX_REPORTS = 10;
-            // return updatedReports.slice(0, MAX_REPORTS);
-            return updatedReports;
+            // Optional: Limit the number of stored reports in memory
+            const MAX_REPORTS_IN_MEMORY = 10;
+            return updatedReports.slice(0, MAX_REPORTS_IN_MEMORY);
+            // return updatedReports;
        });
    };
 
@@ -465,7 +501,7 @@ export default function Home() {
         // Image URI is already available in imagePreview state
         const imageUri = imagePreview;
 
-        // **Simulated** Image Quality Checks (already handled in classifyImage flow)
+        // Image Quality Checks are handled inside the Genkit flow now
         const isClearImage = true; // Placeholder - flow handles this
         const hasHumanSkinContent = true; // Placeholder - flow handles this
 
@@ -484,17 +520,17 @@ export default function Home() {
              if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
                  setApiError(apiResult.predictedDisease);
                  setResult(null); // Keep result null on error
-                  toast({
+                 toast({
                     variant: "destructive",
                     title: "Analysis Issue",
                     description: apiResult.predictedDisease,
                    });
-            } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
+             } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
                 setResult(apiResult); // Set the result
                 setApiError(null); // Clear previous errors
                 console.log("Classification successful:", apiResult);
-                // Add to past reports after successful analysis
-                 addPastReport(apiResult, questionnaireData, imageUri);
+                // Add to past reports state after successful analysis (includes PDF generation)
+                await addPastReport(apiResult, questionnaireData, imageUri);
              } else {
                  console.error("Invalid API response structure:", apiResult);
                  setApiError("Received an unexpected result from the analysis service.");
@@ -566,7 +602,7 @@ export default function Home() {
               await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
                const fetchedClinics: ClinicInfo[] = [ // Placeholder Data
-                   { id: '1', name: 'District General Hospital - Dermatology Dept.', address: '123 Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in', lat: latitude + 0.01, lon: longitude + 0.01 },
+                   { id: '1', name: 'District General Hospital - Dermatology Dept.', address: 'Govt. Hospital Road, City', distance: '1.5 km', estimatedCost: 'Free under PMJAY/State Scheme', schemes: ['PMJAY', 'State Scheme'], isGovernment: true, website: 'https://example-gov-hosp.gov.in', lat: latitude + 0.01, lon: longitude + 0.01 },
                    { id: '2', name: 'Dr. Sharma Skin Clinic', address: '78 Private Clinic Lane', distance: '4.0 km', estimatedCost: '₹800 - ₹2000 Consultation', schemes: [], isGovernment: false, website: 'https://drsharmaclinic.example.com', lat: latitude - 0.02, lon: longitude - 0.01},
                    { id: '3', name: 'Community Health Centre (CHC)', address: '45 Health St, Near Post Office', distance: '3.2 km', estimatedCost: 'Nominal Fee / Free (Govt.)', schemes: ['State Scheme'], isGovernment: true, lat: latitude + 0.005, lon: longitude - 0.015 },
                    { id: '4', name: 'Urban Primary Health Centre (UPHC)', address: '90 Sector 5, Urban Area', distance: '5.1 km', estimatedCost: 'Free / Minimal Fee (Govt.)', schemes: ['PMJAY Lite'], isGovernment: true, lat: latitude - 0.01, lon: longitude + 0.02 },
@@ -628,18 +664,18 @@ export default function Home() {
 
 
   // --- Functions to handle PDF viewing/downloading for Past Reports ---
+  // These now use the pdfDataUri stored in the runtime state (pastReports)
   const handleViewPastReportPdf = (report: PastReport) => {
-       // Try to find the full report data in state first
-       const fullReport = pastReports.find(r => r.id === report.id);
-       const pdfUri = fullReport?.pdfDataUri ?? report.pdfDataUri; // Use full data if available
-
-      if (!pdfUri) {
-          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded." });
+      if (!report.pdfDataUri) {
+          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded or was not generated." });
+          // Optionally: Attempt to regenerate PDF here if needed (more complex)
+          // const regenerateAndShow = async () => { ... }
           return;
       }
+      // Use the existing viewPdf utility
       const pdfWindow = window.open("");
       if (pdfWindow) {
-          pdfWindow.document.write(`<iframe width='100%' height='100%' src='${pdfUri}'></iframe>`);
+          pdfWindow.document.write(`<iframe width='100%' height='100%' src='${report.pdfDataUri}'></iframe>`);
           pdfWindow.document.title = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}`;
       } else {
           toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
@@ -647,15 +683,13 @@ export default function Home() {
   };
 
   const handleDownloadPastReportPdf = (report: PastReport) => {
-       const fullReport = pastReports.find(r => r.id === report.id);
-       const pdfUri = fullReport?.pdfDataUri ?? report.pdfDataUri;
-
-       if (!pdfUri) {
+       if (!report.pdfDataUri) {
           toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
           return;
        }
+       // Use the existing downloadPdf utility
        const link = document.createElement('a');
-       link.href = pdfUri;
+       link.href = report.pdfDataUri;
        link.download = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`;
        document.body.appendChild(link);
        link.click();
@@ -872,3 +906,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
