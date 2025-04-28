@@ -5,11 +5,11 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image"; // Use next/image for optimization
 import { classifyImage, ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
 import { chatWithBot, ChatInput, ChatOutput } from "@/ai/flows/chat-flow"; // Import chat flow
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"; // Added CardFooter
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2, Leaf, ChevronRight, FileText, History, Eye, Download } from "lucide-react"; // Added PDF icons
+import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2, Leaf, ChevronRight, FileText, History, Eye, Download, Info } from "lucide-react"; // Added PDF icons, Info
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
@@ -32,18 +32,16 @@ interface PastReport {
     confidencePercentage: number;
     imageUri: string; // Store image preview/thumbnail URI
     questionnaireSummary?: string; // Optional summary of questionnaire
-    // Add pdfDataUri to store the generated PDF data IN RUNTIME STATE
-    pdfDataUri?: string;
+    pdfDataUri?: string; // Store the generated PDF data IN RUNTIME STATE
 }
 
-// Placeholder skin conditions data (updated with new card styles)
+// --- Skin Conditions Data (For display purposes) ---
 const skinConditions = [
-    { name: "Acne", description: "Common condition with pimples, blackheads.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><circle cx="12" cy="8" r="1"/><circle cx="10" cy="13" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="12" cy="17" r="1"/><path d="M12 2a10 10 0 1 0 10 10 A10 10 0 0 0 12 2z"/></svg> },
-    { name: "Eczema", description: "Causes itchy, red, inflamed skin patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2c-3 0-5 2-8 2s-5-2-8-2c-3 0-5 2-5 5s2 5 5 5c0 3-2 5-2 8s2 5 5 5 5-2 8-2 5 2 8 2 5-2 5-5-2-5-2-8 2-5 5-5-2-5-5-5c-3 0-5 2-8 2s-5-2-8-2z"/><path d="M14 14a2 2 0 1 0-4 0 2 2 0 0 0 4 0z"/><path d="M10 10c.5-1 2-2 4-2"/><path d="M14 10c-.5 1-2 2-4 2"/></svg> },
+    { name: "Acne Vulgaris", description: "Common condition with pimples, blackheads.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><circle cx="12" cy="8" r="1"/><circle cx="10" cy="13" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="12" cy="17" r="1"/><path d="M12 2a10 10 0 1 0 10 10 A10 10 0 0 0 12 2z"/></svg> },
+    { name: "Eczema (Atopic Dermatitis)", description: "Causes itchy, red, inflamed skin patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2c-3 0-5 2-8 2s-5-2-8-2c-3 0-5 2-5 5s2 5 5 5c0 3-2 5-2 8s2 5 5 5 5-2 8-2 5 2 8 2 5-2 5-5-2-5-2-8 2-5 5-5-2-5-5-5c-3 0-5 2-8 2s-5-2-8-2z"/><path d="M14 14a2 2 0 1 0-4 0 2 2 0 0 0 4 0z"/><path d="M10 10c.5-1 2-2 4-2"/><path d="M14 10c-.5 1-2 2-4 2"/></svg> },
     { name: "Psoriasis", description: "Autoimmune issue with red, scaly patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 14c-4.5 0-8-3.5-8-8s3.5-8 8-8 8 3.5 8 8-3.5 8-8 8z"/><path d="M12 14c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z"/><path d="M12 22c4.5 0 8-3.5 8-8s-3.5-8-8-8-8 3.5-8 8 3.5 8 8 8z"/></svg> },
     { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
     { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive opacity-70"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
-     // Adding the HAM10000 specific ones for better context in results
     { name: "Actinic Keratosis (AKIEC)", description: "Rough, scaly patch on sun-exposed skin.", icon: <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400 opacity-70" /> },
     { name: "Basal Cell Carcinoma (BCC)", description: "Pearly or waxy bump, or scar-like lesion.", icon: <AlertCircle className="h-8 w-8 text-destructive opacity-70" /> },
     { name: "Benign Keratosis-like Lesions (BKL)", description: "Non-cancerous growths like seborrheic keratoses.", icon: <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400 opacity-70" /> },
@@ -52,7 +50,7 @@ const skinConditions = [
     { name: "Vascular Lesions (VASC)", description: "Lesions related to blood vessels (e.g., cherry angiomas).", icon: <HeartPulse className="h-8 w-8 text-red-400 opacity-70" /> },
 ];
 
-// --- Scrolling Disease List Component (Keep as is) ---
+// --- Scrolling Disease List Component ---
 const scrollingDiseaseList = [
   "Acne", "Eczema", "Psoriasis", "Melanoma", "Rosacea",
   "Dermatitis", "Hives", "Ringworm", "Cellulitis", "Seborrheic Dermatitis"
@@ -73,7 +71,7 @@ function ScrollingDiseaseList() {
     );
 }
 
-// --- Image Upload Component (Keep as is) ---
+// --- Image Upload Component ---
 function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageUpload: (file: File | null) => void; loading: boolean; currentImagePreview: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -110,9 +108,9 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
   };
 
   return (
-    <Card>
+    <Card className="bg-card rounded-lg overflow-hidden"> {/* Added styling */}
       <CardHeader>
-        <CardTitle>Upload Your Image</CardTitle>
+        <CardTitle className="text-xl font-semibold">Upload Your Image</CardTitle> {/* Improved typography */}
         <CardDescription>Upload a clear face image for analysis.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
@@ -155,7 +153,7 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
 }
 
 
-// --- Chatbot Component (Keep as is) ---
+// --- Chatbot Component ---
 function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Array<{ text: string; sender: 'user' | 'bot' }>>([
@@ -213,7 +211,7 @@ function Chatbot() {
                    <span>Chat</span>
                 </Button>
             ) : (
-                <Card className="w-80 shadow-lg flex flex-col max-h-[60vh]">
+                <Card className="w-80 shadow-lg flex flex-col max-h-[60vh] bg-card"> {/* Ensure card background */}
                     <CardHeader className="flex flex-row items-center justify-between p-3 border-b flex-shrink-0">
                          <div className="flex items-center space-x-2">
                             <Avatar className="h-6 w-6">
@@ -273,7 +271,6 @@ interface StoredReportData {
     confidencePercentage: number;
     imageUriPreview: string; // Smaller URI for storage efficiency
     questionnaireSummary?: string;
-    // pdfDataUri is NOT stored here due to size limits
 }
 
 // --- Past Reports Section ---
@@ -281,55 +278,67 @@ function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: Pa
     if (!reports || reports.length === 0) {
         return (
             <section id="past-reports" className="container mx-auto py-12 px-4">
-                <h2 className="text-3xl font-semibold text-center mb-4 flex items-center justify-center gap-2">
-                    <History className="h-7 w-7"/> Past Analysis Reports
-                </h2>
-                 <p className="text-center text-muted-foreground">No reports available yet.</p>
+                 <Card className="bg-card rounded-lg"> {/* Wrap section content in Card */}
+                   <CardHeader>
+                     <h2 className="text-2xl font-semibold text-center mb-4 flex items-center justify-center gap-2">
+                       <History className="h-6 w-6"/> Past Analysis Reports
+                     </h2>
+                   </CardHeader>
+                   <CardContent>
+                      <p className="text-center text-muted-foreground">No reports available yet.</p>
+                   </CardContent>
+                 </Card>
             </section>
         );
     }
 
     return (
         <section id="past-reports" className="container mx-auto py-12 px-4">
-            <h2 className="text-3xl font-semibold text-center mb-8 flex items-center justify-center gap-2">
-                <History className="h-7 w-7"/> Past Analysis Reports
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {reports.map((report) => (
-                    <Card key={report.id} className="overflow-hidden text-sm">
-                        <CardHeader className="p-3 pb-1">
-                            <div className="flex justify-between items-center">
-                                <CardTitle className="text-base">{report.predictedDisease}</CardTitle>
-                                <span className="text-xs text-muted-foreground">
-                                    {format(new Date(report.timestamp), 'MMM d, yyyy')}
-                                </span>
-                            </div>
-                            <CardDescription className="text-xs">
-                                Confidence: {report.confidencePercentage.toFixed(1)}%
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-1">
-                             <div className="aspect-square relative w-full bg-muted rounded overflow-hidden mb-2">
-                                 <Image
-                                    src={report.imageUri} // Use the full URI stored in state for display
-                                    alt={`Report ${report.id}`}
-                                    layout="fill"
-                                    objectFit="cover"
-                                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/placeholder/200'; }} // Fallback
-                                 />
-                             </div>
-                             <div className="flex gap-1 justify-end">
-                                <Button variant="outline" size="sm" onClick={() => onViewPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
-                                    <Eye className="h-3 w-3 mr-1"/> View PDF
-                                </Button>
-                                <Button variant="default" size="sm" onClick={() => onDownloadPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
-                                    <Download className="h-3 w-3 mr-1"/> DL PDF
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            <Card className="bg-card rounded-lg"> {/* Wrap section content in Card */}
+              <CardHeader>
+                 <h2 className="text-3xl font-semibold text-center mb-8 flex items-center justify-center gap-2">
+                     <History className="h-7 w-7"/> Past Analysis Reports
+                 </h2>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {reports.map((report) => (
+                        <Card key={report.id} className="overflow-hidden text-sm bg-background shadow-md hover:shadow-lg transition-shadow duration-300"> {/* Nested card styling */}
+                            <CardHeader className="p-3 pb-1">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-base">{report.predictedDisease}</CardTitle>
+                                    <span className="text-xs text-muted-foreground">
+                                        {format(new Date(report.timestamp), 'MMM d, yyyy')}
+                                    </span>
+                                </div>
+                                <CardDescription className="text-xs">
+                                    Confidence: {report.confidencePercentage.toFixed(1)}%
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-3 pt-1">
+                                <div className="aspect-square relative w-full bg-muted rounded overflow-hidden mb-2">
+                                    <Image
+                                        src={report.imageUri} // Use the full URI stored in state for display
+                                        alt={`Report ${report.id}`}
+                                        layout="fill"
+                                        objectFit="cover"
+                                        onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/placeholder/200'; }} // Fallback
+                                    />
+                                </div>
+                                <div className="flex gap-1 justify-end">
+                                    <Button variant="outline" size="sm" onClick={() => onViewPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
+                                        <Eye className="h-3 w-3 mr-1"/> View PDF
+                                    </Button>
+                                    <Button variant="default" size="sm" onClick={() => onDownloadPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
+                                        <Download className="h-3 w-3 mr-1"/> DL PDF
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
         </section>
     );
 }
@@ -364,7 +373,6 @@ export default function Home() {
       if (storedReportsJson) {
           const storedReportsData: StoredReportData[] = JSON.parse(storedReportsJson);
            // Convert stored data (without full image/PDF) back to PastReport format
-           // We need to re-generate PDF URIs if needed, or handle missing PDFs gracefully
            const loadedReports: PastReport[] = storedReportsData.map(storedReport => ({
                 ...storedReport,
                 imageUri: storedReport.imageUriPreview, // Use the stored preview URI
@@ -375,7 +383,6 @@ export default function Home() {
       }
     } catch (e) {
         console.error("Failed to load past reports from session storage:", e);
-        // Optionally clear corrupted data: sessionStorage.removeItem('pastSkinReports');
     }
   }, []);
 
@@ -388,15 +395,21 @@ export default function Home() {
              timestamp: r.timestamp,
              predictedDisease: r.predictedDisease,
              confidencePercentage: r.confidencePercentage,
-             imageUriPreview: r.imageUri.substring(0, 100) + '...', // Store truncated URI or a placeholder
+             // Store a smaller preview or placeholder if URI is too large
+             imageUriPreview: r.imageUri.length > 5000 ? r.imageUri.substring(0, 100) + '...' : r.imageUri,
              questionnaireSummary: r.questionnaireSummary,
              // pdfDataUri is intentionally omitted from session storage
-        }));
+        })).filter(r => r.imageUriPreview); // Filter out potentially invalid previews
+
         sessionStorage.setItem('pastSkinReports', JSON.stringify(reportsToStore));
          console.log("Saved past reports overview to session storage.");
     } catch (e) {
         console.error("Failed to save past reports to session storage:", e);
-        toast({ variant: "destructive", title: "Storage Error", description: "Could not save report history. Storage might be full." });
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+             toast({ variant: "destructive", title: "Storage Full", description: "Could not save full report history. Session storage is full. Older reports might be lost." });
+        } else {
+             toast({ variant: "destructive", title: "Storage Error", description: "Could not save report history." });
+        }
     }
   }, [pastReports, toast]); // Add toast to dependencies
 
@@ -413,7 +426,6 @@ export default function Home() {
           reader.readAsDataURL(file);
            setResult(null); // Reset results on new image
            setApiError(null);
-           // Do NOT open results popup here, wait for analysis
       } else {
           setImagePreview(null);
       }
@@ -429,7 +441,6 @@ export default function Home() {
     });
     setResult(null); // Reset results if assessment changes
     setApiError(null);
-    // Do NOT open results popup here
   };
 
 
@@ -460,13 +471,10 @@ export default function Home() {
            pdfDataUri: pdfDataUri, // Store the generated PDF data URI in the runtime state
        };
 
-        // Add the new report with the PDF data to the state
        setPastReports(prevReports => {
             const updatedReports = [newReport, ...prevReports];
-            // Optional: Limit the number of stored reports in memory
             const MAX_REPORTS_IN_MEMORY = 10;
             return updatedReports.slice(0, MAX_REPORTS_IN_MEMORY);
-            // return updatedReports;
        });
    };
 
@@ -498,12 +506,11 @@ export default function Home() {
     setIsResultsPopupOpen(true); // Open the popup immediately to show loading state
 
     try {
-        // Image URI is already available in imagePreview state
         const imageUri = imagePreview;
 
-        // Image Quality Checks are handled inside the Genkit flow now
-        const isClearImage = true; // Placeholder - flow handles this
-        const hasHumanSkinContent = true; // Placeholder - flow handles this
+        // Placeholders - the flow handles actual image quality checks
+        const isClearImage = true;
+        const hasHumanSkinContent = true;
 
         console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData, isClear: isClearImage, hasHumanSkin: hasHumanSkinContent });
 
@@ -511,22 +518,22 @@ export default function Home() {
             const apiResult = await classifyImage({
                 imageUri: imageUri,
                 questionnaireData: questionnaireData || undefined,
-                isClear: isClearImage,
-                hasHumanSkin: hasHumanSkinContent,
+                isClear: isClearImage, // Flow now uses the image directly
+                hasHumanSkin: hasHumanSkinContent, // Flow now uses the image directly
             });
             console.log("API Response:", apiResult);
 
              // Check for specific error messages related to image quality from the flow itself
              if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
                  setApiError(apiResult.predictedDisease);
-                 setResult(null); // Keep result null on error
+                 setResult(apiResult); // Set the result even if it's an error message for display
                  toast({
-                    variant: "destructive",
+                    variant: "warning", // Changed to warning
                     title: "Analysis Issue",
                     description: apiResult.predictedDisease,
                    });
              } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
-                setResult(apiResult); // Set the result
+                setResult(apiResult); // Set the successful result
                 setApiError(null); // Clear previous errors
                 console.log("Classification successful:", apiResult);
                 // Add to past reports state after successful analysis (includes PDF generation)
@@ -580,7 +587,7 @@ export default function Home() {
   };
 
 
-   // --- Find Clinics Logic (Keep as is) ---
+   // --- Find Clinics Logic ---
    const handleFindClinics = () => {
      setClinicLoading(true);
      setClinicError(null);
@@ -664,36 +671,57 @@ export default function Home() {
 
 
   // --- Functions to handle PDF viewing/downloading for Past Reports ---
-  // These now use the pdfDataUri stored in the runtime state (pastReports)
-  const handleViewPastReportPdf = (report: PastReport) => {
+  const handleViewPastReportPdf = async (report: PastReport) => {
       if (!report.pdfDataUri) {
-          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded or was not generated." });
-          // Optionally: Attempt to regenerate PDF here if needed (more complex)
-          // const regenerateAndShow = async () => { ... }
-          return;
+          // Attempt to regenerate PDF if missing and other data exists
+          if (report.predictedDisease && report.imageUri) {
+              toast({ title: "Regenerating PDF...", description: "Please wait." });
+              try {
+                  const regeneratedDoc = generatePdfReport(
+                      { predictedDisease: report.predictedDisease, confidencePercentage: report.confidencePercentage, notes: "" }, // Minimal necessary data
+                      null, // Questionnaire might be unavailable from session
+                      report.imageUri
+                  );
+                  const regeneratedUri = regeneratedDoc.output('datauristring');
+                   // Update state (optional but good)
+                   setPastReports(prev => prev.map(p => p.id === report.id ? { ...p, pdfDataUri: regeneratedUri } : p));
+                   viewPdf(regeneratedDoc); // Use the utility
+                   return; // Exit after successful regeneration and view
+              } catch (regenError) {
+                  console.error("Failed to regenerate PDF:", regenError);
+                   toast({ variant: "destructive", title: "PDF Regeneration Failed", description: "Could not regenerate the PDF." });
+                   return; // Exit if regeneration fails
+              }
+          } else {
+              toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded or regenerated." });
+              return; // Exit if not enough data to regenerate
+          }
       }
-      // Use the existing viewPdf utility
-      const pdfWindow = window.open("");
-      if (pdfWindow) {
-          pdfWindow.document.write(`<iframe width='100%' height='100%' src='${report.pdfDataUri}'></iframe>`);
-          pdfWindow.document.title = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}`;
-      } else {
-          toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
+      // If pdfDataUri exists, use the standard jsPDF object creation
+      try {
+          const doc = new jsPDF(); // Create a new instance (jsPDF doesn't easily load from data URI)
+          // This is a workaround: open the data URI directly
+          const pdfWindow = window.open("");
+          if (pdfWindow) {
+              pdfWindow.document.write(`<iframe width='100%' height='100%' src='${report.pdfDataUri}'></iframe>`);
+              pdfWindow.document.title = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}`;
+          } else {
+              toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
+          }
+      } catch (e) {
+         console.error("Error viewing PDF from Data URI:", e);
+         toast({ variant: "destructive", title: "PDF Error", description: "Could not display the PDF report." });
       }
   };
 
   const handleDownloadPastReportPdf = (report: PastReport) => {
        if (!report.pdfDataUri) {
-          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
-          return;
+          // Attempt regeneration similar to view function if needed, or just show error
+           toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
+           return;
        }
-       // Use the existing downloadPdf utility
-       const link = document.createElement('a');
-       link.href = report.pdfDataUri;
-       link.download = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`;
-       document.body.appendChild(link);
-       link.click();
-       document.body.removeChild(link);
+       // Use the utility function with the data URI
+       downloadPdf(report.pdfDataUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`);
    };
 
 
@@ -706,30 +734,29 @@ export default function Home() {
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
 
       {/* Enhanced Header */}
-      <nav className="w-full py-3 bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
+       <nav className="w-full py-3 bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
           <div className="container mx-auto flex items-center justify-between px-4 relative">
               <Link href="/" className="flex items-center space-x-2 text-3xl font-bold hover:opacity-90 transition-opacity">
                   <span>Skin</span><span className="header-logo-sewa">Sewa</span>
               </Link>
-              <span className="text-sm opacity-80 absolute left-1/2 -translate-x-1/2 hidden lg:inline">{/* Adjusted slogan position */}
+              <span className="text-sm opacity-80 absolute left-1/2 -translate-x-1/2 hidden lg:inline">
                   स्वस्थ जीवन सुखी जीवन
               </span>
               <div className="flex items-center space-x-2 md:space-x-4">
-                   {/* Navigation Links */}
+                  {/* Navigation Links */}
                   <div className="hidden md:flex items-center space-x-4">
-                      <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
-                         <Link href="/" className="text-sm flex items-center gap-1"><Leaf className="h-4 w-4 text-accent"/>Home</Link>
-                      </Button>
-                      <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
-                         <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
-                      </Button>
-                      {/* Add other links like About, Contact if needed */}
+                       <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+                           <Link href="/" className="text-sm flex items-center gap-1"><Leaf className="h-4 w-4 text-accent"/>Home</Link>
+                       </Button>
+                       <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+                           <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
+                       </Button>
                   </div>
 
-                  {/* Doctor Image (Positioned Absolutely) */}
+                 {/* Doctor Image */}
                  <div className="absolute right-0 top-full md:top-0 h-20 w-20 md:h-28 md:w-28 pointer-events-none -mr-2 md:mr-0 md:mt-0 z-10">
                      <Image
-                       src="https://picsum.photos/seed/doctor/200" // Placeholder Doctor Image
+                       src="https://picsum.photos/seed/doctor/200"
                        alt="Doctor Illustration"
                        layout="fill"
                        objectFit="contain"
@@ -737,13 +764,12 @@ export default function Home() {
                      />
                  </div>
 
-                  {/* Toggles - positioned before doctor on small screens? */}
                  <div className="flex items-center space-x-1 md:space-x-2 md:pl-4 md:border-l border-primary-foreground/20 md:ml-4">
                      <LanguageToggle />
                      <ThemeToggle />
                  </div>
 
-                  {/* Mobile Menu Trigger (Adjust as needed) */}
+                  {/* Mobile Menu Trigger */}
                   <div className="md:hidden">
                      <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -753,7 +779,7 @@ export default function Home() {
           </div>
       </nav>
 
-      {/* Hero Section - Adjusted for new color scheme */}
+      {/* Hero Section */}
        <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-primary/90 via-primary/70 to-secondary/60 dark:from-primary/70 dark:via-primary/50 dark:to-secondary/40 text-primary-foreground px-4 overflow-hidden">
          <div className="absolute inset-0 opacity-10 bg-[url('/hero-background.svg')] bg-cover bg-center"></div>
          <div className="relative z-10 max-w-4xl mx-auto">
@@ -777,68 +803,79 @@ export default function Home() {
        {/* Scrolling Disease List */}
        <ScrollingDiseaseList />
 
-      {/* Categories Section - Updated Card Styles */}
+      {/* Conditions Section - Updated Card Styles */}
       <section id="conditions" className="container mx-auto py-16 px-4">
-        <h2 className="text-3xl font-semibold text-center mb-4">Common Conditions We Analyze</h2>
-         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"> {/* Adjusted grid for 3 cards */}
-          {skinConditions.slice(0, 3).map((condition, index) => ( // Display only first 3 for example
-             <Card key={condition.name} className={cn(
-                "condition-card text-left hover:shadow-xl transition-shadow duration-300 border-l-4 rounded-lg overflow-hidden bg-card flex flex-col justify-between p-6 h-full relative group",
-                 // Specific accent color classes applied via CSS based on index (see globals.css)
-             )}>
-                <div>
-                    <CardTitle className="text-xl mb-2 font-semibold text-card-foreground">{condition.name}</CardTitle>
-                    <CardDescription className="text-sm leading-relaxed text-card-foreground/80 mb-4">{condition.description}</CardDescription>
-                </div>
-                 <div className="flex items-end justify-between mt-4">
-                    <div className="absolute bottom-4 left-4 text-current"> {/* Icon bottom left */}
-                        {condition.icon}
+        <Card className="bg-card rounded-lg p-6 md:p-10"> {/* Wrap section content in Card */}
+          <CardHeader className="text-center mb-8">
+            <h2 className="text-3xl font-semibold mb-2">Common Conditions We Analyze</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {skinConditions.slice(0, 6).map((condition, index) => ( // Display first 6 for better layout
+                 <Card key={condition.name} className={cn(
+                    "condition-card text-left hover:shadow-xl transition-shadow duration-300 border-l-4 rounded-lg overflow-hidden bg-background flex flex-col justify-between p-6 h-full relative group transform hover:scale-105 hover:z-10",
+                     // Gradient and border color applied via CSS in globals.css
+                 )}>
+                    <div>
+                        <CardTitle className="text-xl mb-2 font-semibold text-card-foreground">{condition.name}</CardTitle>
+                        <CardDescription className="text-sm leading-relaxed text-card-foreground/80 mb-4">{condition.description}</CardDescription>
                     </div>
-                    <Link href="/skin-info" className="absolute bottom-4 right-4 h-8 w-8 rounded-full bg-current text-card flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-                         <ChevronRight className="h-5 w-5" />
-                     </Link>
-                 </div>
-             </Card>
-          ))}
-        </div>
+                    <div className="flex items-end justify-between mt-4">
+                        <div className="absolute bottom-4 left-4 text-current opacity-70 group-hover:opacity-90 transition-opacity">
+                            {condition.icon}
+                        </div>
+                         <Link href="/skin-info" className="absolute bottom-4 right-4 h-8 w-8 rounded-full bg-current/80 text-card flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-0 translate-x-2">
+                             <ChevronRight className="h-5 w-5" />
+                         </Link>
+                         {/* Placeholder for expanded info on hover */}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-lg">
+                           <p className="text-white text-xs absolute bottom-4 left-4 right-4">Click arrow for more details...</p>
+                         </div>
+                    </div>
+                 </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Upload & Analysis Section */}
-      <section id="upload" ref={uploadSectionRef} className="container mx-auto py-16 px-4 bg-gradient-to-b from-background to-secondary/30 dark:to-secondary/20 rounded-lg my-8">
-        <div className="max-w-2xl mx-auto">
-           <div className="mb-6">
-                <ImageUpload onImageUpload={handleFileSelect} loading={loading && !isResultsPopupOpen} currentImagePreview={imagePreview} />
-           </div>
+       <section id="upload" ref={uploadSectionRef} className="container mx-auto py-16 px-4">
+         <Card className="bg-card rounded-lg p-6 md:p-10"> {/* Wrap section content in Card */}
+            <CardHeader className="text-center mb-8">
+                <h2 className="text-3xl font-semibold mb-2">Analyze Your Skin</h2>
+                <p className="text-muted-foreground">Upload an image or provide details via assessment.</p>
+            </CardHeader>
+            <CardContent className="max-w-2xl mx-auto">
+               <div className="mb-6">
+                    <ImageUpload onImageUpload={handleFileSelect} loading={loading && !isResultsPopupOpen} currentImagePreview={imagePreview} />
+               </div>
 
-            {questionnaireData && (
-                 <Card className="mb-6 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800">
-                    <CardHeader className="p-3">
-                         <CardTitle className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Assessment Summary Provided</CardTitle>
-                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                         <p className="text-xs text-blue-700 dark:text-blue-400">Age: {questionnaireData.age ?? 'N/A'} | Gender: {questionnaireData.gender ?? 'N/A'} | Symptom: {questionnaireData.symptoms ?? 'N/A'}</p>
-                     </CardContent>
-                 </Card>
-             )}
-
-
-            <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
-                {loading && !isResultsPopupOpen ? ( // Show loader only if popup isn't open yet
-                    <>
-                        <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                        Preparing Analysis...
-                    </>
-                 ) : loading && isResultsPopupOpen ? (
-                     <>
-                        <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                         Analyzing... (Popup Open)
-                     </>
-                 ) : (
-                    'Analyze Now'
+                {questionnaireData && (
+                     <Card className="mb-6 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800">
+                        <CardHeader className="p-3">
+                             <CardTitle className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Assessment Summary Provided</CardTitle>
+                         </CardHeader>
+                        <CardContent className="p-3 pt-0">
+                             <p className="text-xs text-blue-700 dark:text-blue-400">Age: {questionnaireData.age ?? 'N/A'} | Gender: {questionnaireData.gender ?? 'N/A'} | Symptom: {questionnaireData.symptoms ?? 'N/A'}</p>
+                         </CardContent>
+                     </Card>
                  )}
-            </Button>
-        </div>
+
+
+                <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
+                    {loading ? (
+                        <>
+                            <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                            Analyzing...
+                        </>
+                     ) : (
+                        'Analyze Now'
+                     )}
+                </Button>
+            </CardContent>
+         </Card>
       </section>
 
 
@@ -853,7 +890,7 @@ export default function Home() {
              <p className="text-muted-foreground max-w-3xl mx-auto mb-10">Gain preliminary insights and awareness about potential skin conditions. Remember to consult a professional.</p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                <Card className="bg-card shadow-md text-left p-6 rounded-lg">
-                  <CardTitle className="flex items-center gap-2 text-lg mb-2"><AlertCircle className="h-5 w-5 text-primary"/> Early Awareness</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-lg mb-2"><Info className="h-5 w-5 text-primary"/> Early Awareness</CardTitle>
                   <p className="text-sm text-muted-foreground">Identify potential issues early to prompt timely visits to a healthcare professional.</p>
                </Card>
                <Card className="bg-card shadow-md text-left p-6 rounded-lg">
@@ -902,9 +939,9 @@ export default function Home() {
             imageUri={imagePreview} // Pass the image data URI
             loading={loading} // Pass loading state
             apiError={apiError} // Pass error state
+            onFindClinics={handleFindClinics} // Pass clinic search trigger
         />
     </div>
   );
 }
 
-    

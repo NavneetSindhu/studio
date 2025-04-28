@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, XCircle, AlertCircle, HeartPulse, Download, Eye, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, HeartPulse, Download, Eye, Loader2, MapPin } from "lucide-react"; // Added MapPin
 import type { ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
 import { generatePdfReport, viewPdf, downloadPdf } from "@/lib/pdfUtils"; // Import PDF utilities
 import { useToast } from "@/hooks/use-toast"; // Import useToast for better feedback
+import { jsPDF } from "jspdf"; // Import jsPDF
 
 interface ResultsPopupModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ interface ResultsPopupModalProps {
     imageUri: string | null; // Pass the full data URI
     loading: boolean; // Indicate if the analysis is still loading initially
     apiError: string | null;
+    onFindClinics: () => void; // Callback to trigger clinic search
 }
 
 export function ResultsPopupModal({
@@ -29,7 +31,8 @@ export function ResultsPopupModal({
     questionnaireData,
     imageUri,
     loading,
-    apiError
+    apiError,
+    onFindClinics // Receive the handler
 }: ResultsPopupModalProps) {
 
     const [isPdfGenerating, setIsPdfGenerating] = React.useState(false);
@@ -43,7 +46,15 @@ export function ResultsPopupModal({
             // Use async generation if it becomes complex
             await new Promise(resolve => setTimeout(resolve, 50)); // Simulate short delay/allow UI update
             const doc = generatePdfReport(result, questionnaireData, imageUri);
-            viewPdf(doc); // Use the utility function
+             // Use the existing viewPdf utility
+            const pdfDataUri = doc.output('datauristring');
+            const pdfWindow = window.open("");
+            if (pdfWindow) {
+                pdfWindow.document.write(`<iframe width='100%' height='100%' src='${pdfDataUri}'></iframe>`);
+                 pdfWindow.document.title = `SkinSewa Report Preview`;
+            } else {
+                 toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
+            }
         } catch (error) {
             console.error("Error generating or viewing PDF:", error);
             toast({ variant: "destructive", title: "PDF Error", description: "Failed to generate or view PDF report." });
@@ -60,7 +71,8 @@ export function ResultsPopupModal({
             // Use async generation if it becomes complex
             await new Promise(resolve => setTimeout(resolve, 50)); // Simulate short delay/allow UI update
              const doc = generatePdfReport(result, questionnaireData, imageUri);
-             downloadPdf(doc, `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`); // Use the utility function
+             // Use the existing downloadPdf utility function that takes data URI
+              downloadPdf(doc.output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
              console.error("Error generating or downloading PDF:", error);
             toast({ variant: "destructive", title: "PDF Error", description: "Failed to generate or download PDF report." });
@@ -77,17 +89,17 @@ export function ResultsPopupModal({
             { name: "Eczema", description: "Causes itchy, red, inflamed skin patches.", icon: <CheckCircle /> },
             { name: "Psoriasis", description: "Autoimmune issue with red, scaly patches.", icon: <CheckCircle /> },
             { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <CheckCircle /> },
-            { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <AlertCircle /> },
-            { name: "Actinic Keratosis (AKIEC)", description: "Rough, scaly patch on sun-exposed skin.", icon: <AlertCircle /> },
-            { name: "Basal Cell Carcinoma (BCC)", description: "Pearly or waxy bump, or scar-like lesion.", icon: <AlertCircle /> },
-            { name: "Benign Keratosis-like Lesions (BKL)", description: "Non-cancerous growths like seborrheic keratoses.", icon: <CheckCircle /> },
-            { name: "Dermatofibroma (DF)", description: "Small, firm bump, often on lower legs.", icon: <CheckCircle /> },
-            { name: "Melanocytic Nevi (NV)", description: "Common moles (typically benign).", icon: <CheckCircle /> },
-            { name: "Vascular Lesions (VASC)", description: "Lesions related to blood vessels (e.g., cherry angiomas).", icon: <HeartPulse /> },
-            { name: "Unknown/Benign", description: "No specific condition identified or potentially benign.", icon: <CheckCircle /> },
-            { name: "Image quality is too poor for analysis.", description: "Please upload a clearer image.", icon: <XCircle /> },
-            { name: "Image does not appear to contain human skin.", description: "Please upload an image of human skin.", icon: <XCircle /> },
-             { name: "Analysis Inconclusive", description: "The AI could not determine a specific condition.", icon: <AlertCircle /> },
+            { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <AlertCircle className="text-destructive"/> },
+            { name: "Actinic Keratosis (AKIEC)", description: "Rough, scaly patch on sun-exposed skin.", icon: <AlertCircle className="text-amber-600"/> },
+            { name: "Basal Cell Carcinoma (BCC)", description: "Pearly or waxy bump, or scar-like lesion.", icon: <AlertCircle className="text-destructive"/> },
+            { name: "Benign Keratosis-like Lesions (BKL)", description: "Non-cancerous growths like seborrheic keratoses.", icon: <CheckCircle className="text-green-600"/> },
+            { name: "Dermatofibroma (DF)", description: "Small, firm bump, often on lower legs.", icon: <CheckCircle className="text-green-600"/> },
+            { name: "Melanocytic Nevi (NV)", description: "Common moles (typically benign).", icon: <CheckCircle className="text-green-600"/> },
+            { name: "Vascular Lesions (VASC)", description: "Lesions related to blood vessels (e.g., cherry angiomas).", icon: <HeartPulse className="text-red-400"/> },
+            { name: "Unknown/Benign", description: "No specific condition identified or potentially benign.", icon: <CheckCircle className="text-muted-foreground"/> },
+            { name: "Image quality is too poor for analysis.", description: "Please upload a clearer image.", icon: <XCircle className="text-destructive"/> },
+            { name: "Image does not appear to contain human skin.", description: "Please upload an image of human skin.", icon: <XCircle className="text-destructive"/> },
+             { name: "Analysis Inconclusive", description: "The AI could not determine a specific condition.", icon: <AlertCircle className="text-amber-600"/> },
         ];
         return conditions.find(c => c.name.toLowerCase() === predictedDisease?.toLowerCase());
     };
@@ -98,7 +110,7 @@ export function ResultsPopupModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col bg-card"> {/* Ensured card background */}
                 <DialogHeader>
                     <DialogTitle>{loading ? "Analyzing..." : apiError ? "Analysis Failed" : "Analysis Complete"}</DialogTitle>
                     {!loading && !apiError && (
@@ -140,7 +152,7 @@ export function ResultsPopupModal({
                                 <div className="space-y-4">
                                     <div className="border rounded-md p-3 bg-muted/30">
                                         <h3 className="font-semibold mb-2 text-center">Uploaded Image</h3>
-                                        <div className="aspect-square relative w-full max-w-xs mx-auto bg-gray-200 rounded overflow-hidden">
+                                        <div className="aspect-square relative w-full max-w-xs mx-auto bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
                                              <Image
                                                 src={imageUri}
                                                 alt="Uploaded skin analysis"
@@ -164,9 +176,9 @@ export function ResultsPopupModal({
 
                                 {/* Right Side: Prediction & Notes */}
                                 <div className="space-y-4">
-                                     <div className="border rounded-md p-4 bg-card">
+                                     <div className="border rounded-md p-4 bg-background"> {/* Changed background */}
                                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            {conditionDetails?.icon || <HeartPulse className="h-5 w-5 text-primary"/>}
+                                             {conditionDetails?.icon || <HeartPulse className="h-5 w-5 text-primary flex-shrink-0"/>}
                                             Prediction: {result.predictedDisease}
                                         </h3>
                                         {conditionDetails?.description && <p className="text-sm text-muted-foreground mb-3">{conditionDetails.description}</p>}
@@ -189,6 +201,13 @@ export function ResultsPopupModal({
                                         </div>
                                         )}
                                     </div>
+
+                                     {/* Add Find Clinics button here if analysis is successful */}
+                                     {!isErrorResult && (
+                                        <Button onClick={() => { onClose(); onFindClinics(); }} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                                            <MapPin className="mr-2 h-4 w-4" /> Find Nearby Clinic
+                                        </Button>
+                                     )}
 
                                      <Alert variant="warning">
                                         <AlertCircle className="h-4 w-4"/>
@@ -242,4 +261,3 @@ export function ResultsPopupModal({
     );
 }
 
-    

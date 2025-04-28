@@ -5,10 +5,10 @@
 @layer base {
   :root {
     /* Light Theme - New Palette */
-    --background: 210 40% 98%; /* Light Grey/Off-white base */
+    --background: 0 0% 100%; /* White base */
     --foreground: 210 10% 23%; /* Dark Grey */
 
-    --card: 0 0% 100%; /* White */
+    --card: 210 40% 98%; /* Very Light Grey/Off-white for cards */
     --card-foreground: 210 10% 23%; /* Dark Grey */
 
     --popover: 0 0% 100%; /* White */
@@ -110,24 +110,36 @@
 
 /* Assign card accent colors dynamically (example for 3 colors) */
 .condition-card:nth-child(3n+1) {
-    background-color: hsl(var(--card-accent-1) / 0.1); /* Red-Orange background tint */
+    --card-gradient-from: hsl(var(--card-accent-1) / 0.1);
+    --card-gradient-to: hsl(var(--card) / 0.9);
     border-color: hsl(var(--card-accent-1));
 }
 .condition-card:nth-child(3n+2) {
-     background-color: hsl(var(--card-accent-2) / 0.1); /* Blue-Purple background tint */
+     --card-gradient-from: hsl(var(--card-accent-2) / 0.1);
+     --card-gradient-to: hsl(var(--card) / 0.9);
      border-color: hsl(var(--card-accent-2));
 }
 .condition-card:nth-child(3n+3) {
-     background-color: hsl(var(--card-accent-3) / 0.1); /* Orange-Yellow background tint */
+     --card-gradient-from: hsl(var(--card-accent-3) / 0.1);
+     --card-gradient-to: hsl(var(--card) / 0.9);
      border-color: hsl(var(--card-accent-3));
 }
 
+/* Apply gradient using the variables */
+.condition-card {
+    background: linear-gradient(135deg, var(--card-gradient-from), var(--card-gradient-to));
+}
+
+
 .dark .condition-card:nth-child(3n+1) {
-    background-color: hsl(var(--card-accent-1) / 0.2); /* Dark mode tint */
+    --card-gradient-from: hsl(var(--card-accent-1) / 0.2);
+    --card-gradient-to: hsl(var(--card) / 0.8);
 }
 .dark .condition-card:nth-child(3n+2) {
-     background-color: hsl(var(--card-accent-2) / 0.2); /* Dark mode tint */
+     --card-gradient-from: hsl(var(--card-accent-2) / 0.2);
+     --card-gradient-to: hsl(var(--card) / 0.8);
 }
 .dark .condition-card:nth-child(3n+3) {
-     background-color: hsl(var(--card-accent-3) / 0.2); /* Dark mode tint */
+     --card-gradient-from: hsl(var(--card-accent-3) / 0.2);
+     --card-gradient-to: hsl(var(--card) / 0.8);
 }
