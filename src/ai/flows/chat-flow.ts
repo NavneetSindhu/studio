@@ -1,9 +1,8 @@
 'use server';
 
-import { ai } from '@/ai/ai-instance';
+import { ai } from '@/ai/ai-instance';  // Make sure ai is correctly initialized
 import { z } from 'genkit';
-import { generate } from 'genkit'; // Adjusted import path
-import { defineFlow, type Flow } from 'genkit';
+import { defineFlow, type Flow } from 'genkit';  // Removed unused import for generate
 
 const MessageSchema = z.object({
   text: z.string(),
@@ -35,7 +34,7 @@ const chatFlow: Flow<typeof ChatInputSchema, typeof ChatOutputSchema> = defineFl
     console.log('Chat Flow Input:', { message: input.message, historyLength: input.history?.length });
 
     const history = input.history?.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
+      role: msg.sender === 'user' ? 'user' : 'model', 
       content: [{ text: msg.text }],
     })) || [];
 
@@ -46,8 +45,8 @@ const chatFlow: Flow<typeof ChatInputSchema, typeof ChatOutputSchema> = defineFl
     ];
 
     try {
-      const llmResponse = await generate({
-        model: ai.model, // Ensure ai.model is correctly set
+      // Ensure 'ai.generate' is being used here
+      const llmResponse = await ai.generate({
         prompt: prompt,
         config: {
           temperature: 0.7,
@@ -57,7 +56,8 @@ const chatFlow: Flow<typeof ChatInputSchema, typeof ChatOutputSchema> = defineFl
         },
       });
 
-      const responseText = llmResponse.text();
+      const responseText = llmResponse.text();  // Retrieve the text response from the generated output
+
       console.log('Chat Flow LLM Response:', responseText);
 
       if (!responseText) {
@@ -74,6 +74,7 @@ const chatFlow: Flow<typeof ChatInputSchema, typeof ChatOutputSchema> = defineFl
   }
 );
 
+// Register the flow in ai
 ai.defineFlow(
   {
     name: 'managedChatFlow',

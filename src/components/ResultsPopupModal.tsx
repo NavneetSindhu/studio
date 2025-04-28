@@ -213,7 +213,7 @@ export function ResultsPopupModal({
                     )}
                 </div>
 
-                <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-row gap-2">
+                <DialogFooter className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2 justify-between">
                      <DialogClose asChild>
                         <Button type="button" variant="outline">
                             Close
@@ -221,7 +221,7 @@ export function ResultsPopupModal({
                      </DialogClose>
                       {/* Only show PDF buttons if analysis was successful (not loading, no error, not an image quality issue) */}
                     {!loading && !apiError && result && !isErrorResult && imageUri && (
-                        <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="flex gap-2 w-full sm:w-auto justify-end"> {/* Aligned buttons to the right */}
                             <Button
                                 onClick={handleViewPdfClick} // Use the handler from props
                                 variant="secondary"
@@ -247,3 +247,4 @@ export function ResultsPopupModal({
         </Dialog>
     );
 }
+

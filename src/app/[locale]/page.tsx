@@ -694,8 +694,8 @@ export default function Home({ params }: { params: { locale: string } }) { // Ac
     const handleViewPastReportPdf = async (report: PastReport) => {
         console.log("Attempting to view PDF for report:", report.id, "URI exists:", !!report.pdfDataUri);
         if (!report.pdfDataUri) {
-            toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report is not currently available." });
-            // Optionally add regeneration logic here if needed, similar to handleDownload
+            toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report is not currently available. Please try downloading first if this is an older report." });
+            // Do not attempt regeneration here, as the original data might be gone.
             return;
         }
         try {
@@ -709,8 +709,8 @@ export default function Home({ params }: { params: { locale: string } }) { // Ac
     const handleDownloadPastReportPdf = async (report: PastReport) => {
          console.log("Attempting to download PDF for report:", report.id, "URI exists:", !!report.pdfDataUri);
         if (!report.pdfDataUri) {
-             toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report cannot be downloaded currently." });
-             // Optionally add regeneration logic here if needed
+             toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report cannot be downloaded currently. This might be an older report where the PDF was not stored." });
+             // Do not attempt regeneration here.
              return;
         }
         try {
@@ -993,7 +993,8 @@ export default function Home({ params }: { params: { locale: string } }) { // Ac
                         const newDoc = generatePdfReport(result, questionnaireData, imagePreview);
                         viewPdf(newDoc);
                         // Optionally update the state, though this might be redundant if saving works correctly
-                         // setPastReports(prev => prev.map(p => p.id === reportToUse?.id ? { ...p, pdfDataUri: newDoc.output('datauristring') } : p));
+                        // Add logic here to update the specific past report with the newly generated URI if needed
+                        // setPastReports(prev => prev.map(p => p.id === reportToUse?.id ? { ...p, pdfDataUri: newDoc.output('datauristring') } : p));
                     } catch (genError) {
                         console.error("Error generating PDF for view:", genError);
                         toast({ variant: "destructive", title: "PDF Generation Error", description: "Could not generate the PDF for viewing." });
@@ -1022,7 +1023,7 @@ export default function Home({ params }: { params: { locale: string } }) { // Ac
                          const newDoc = generatePdfReport(result, questionnaireData, imagePreview);
                          const pdfUri = newDoc.output('datauristring');
                           downloadPdf(pdfUri, `SkinSewa_Report_${format(new Date((result as any).timestamp || Date.now()), 'yyyy-MM-dd_HHmm')}.pdf`);
-                          // Optionally update the state
+                          // Optionally update the state to store the generated URI
                           // setPastReports(prev => prev.map(p => p.id === reportToUse?.id ? { ...p, pdfDataUri: pdfUri } : p));
                      } catch (genError) {
                         console.error("Error generating PDF for download:", genError);
