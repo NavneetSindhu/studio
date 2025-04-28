@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2, Leaf, ChevronRight } from "lucide-react"; // Added Leaf, ChevronRight
+import { CheckCircle, XCircle, AlertCircle, Upload, ListChecks, HeartPulse, MapPin, Languages, Building, MessageSquare, Loader2, Leaf, ChevronRight, FileText, History, Eye, Download } from "lucide-react"; // Added PDF icons
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
@@ -19,6 +19,22 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ClinicResultsModal, ClinicInfo } from "@/components/ClinicResultsModal";
+import { ResultsPopupModal } from "@/components/ResultsPopupModal"; // Import the new results popup
+import { generatePdfReport, viewPdf, downloadPdf } from "@/lib/pdfUtils"; // Import PDF utilities
+import { format } from 'date-fns'; // For formatting dates
+
+
+// --- Session Report Type ---
+interface PastReport {
+    id: string;
+    timestamp: number;
+    predictedDisease: string;
+    confidencePercentage: number;
+    imageUri: string; // Store image preview/thumbnail URI
+    questionnaireSummary?: string; // Optional summary of questionnaire
+    // Add pdfDataUri to store the generated PDF data
+    pdfDataUri?: string;
+}
 
 // Placeholder skin conditions data (updated with new card styles)
 const skinConditions = [
@@ -28,7 +44,6 @@ const skinConditions = [
     { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-inherit opacity-70"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 12a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" fill="currentColor" fillOpacity="0.3"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> },
     { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-destructive opacity-70"><path d="m12 2-10 18h20L12 2z"/><line x1="12" x2="12" y1="8" y2="14"/><line x1="12" x2="12.01" y1="18"/></svg> },
 ];
-
 
 // --- Scrolling Disease List Component (Keep as is) ---
 const scrollingDiseaseList = [
@@ -132,107 +147,6 @@ function ImageUpload({ onImageUpload, loading, currentImagePreview }: { onImageU
   );
 }
 
-// --- Result Display Component (Keep as is) ---
-function ResultDisplay({ result, loading, apiError, onFindClinics }: { result: ClassifyImageOutput | null; loading: boolean; apiError: string | null; onFindClinics: () => void }) {
-    if (loading) {
-      return (
-        <Card className="mt-6 animate-pulse">
-          <CardHeader>
-            <CardTitle>Analyzing...</CardTitle>
-            <CardDescription>Please wait while the AI processes your information.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center space-y-4 p-6">
-             <Loader2 className="animate-spin h-8 w-8 text-primary" />
-            <p className="text-sm text-muted-foreground">This may take a moment...</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (apiError) {
-        return (
-          <Alert variant="destructive" className="mt-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Analysis Failed</AlertTitle>
-            <AlertDescription>
-              {apiError} Please try again or use a different image/information.
-              If the problem persists, contact support.
-            </AlertDescription>
-          </Alert>
-        );
-      }
-
-    if (!result && !loading && !apiError) {
-        return (
-           <Card className="mt-6 border-dashed border-muted-foreground/50">
-              <CardHeader>
-                <CardTitle>Analysis Result</CardTitle>
-                <CardDescription>Submit an image and/or assessment to see results.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center h-24">
-                 <p className="text-sm text-muted-foreground italic">No analysis performed yet.</p>
-              </CardContent>
-           </Card>
-        );
-    }
-
-  // Find the condition details based on the predicted disease name (case-insensitive check)
-  const predictedLower = result?.predictedDisease?.toLowerCase() ?? '';
-  const conditionDetails = skinConditions.find(c => c.name.toLowerCase() === predictedLower);
-
-
-  return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle>Analysis Result</CardTitle>
-        <CardDescription>Potential findings based on the provided information.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {result ? (
-          <>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3 p-4 bg-secondary/50 rounded-md border">
-                 {conditionDetails?.icon ? React.cloneElement(conditionDetails.icon, { className: "h-10 w-10 text-primary mt-1 flex-shrink-0" }) : <HeartPulse className="h-10 w-10 text-primary mt-1 flex-shrink-0" />}
-                <div>
-                  <h3 className="text-lg font-semibold">Predicted Condition: {result.predictedDisease}</h3>
-                  <p className="text-sm text-muted-foreground">
-                      {conditionDetails?.description || "Based on AI analysis."}
-                  </p>
-                </div>
-              </div>
-               <div>
-                 <p className="text-sm font-medium mb-1">Confidence Score:</p>
-                 <div className="flex items-center space-x-2">
-                   <Progress value={result.confidencePercentage} className="flex-1 h-2.5 rounded-full"/>
-                   <span className="text-sm font-semibold">{result.confidencePercentage.toFixed(1)}%</span>
-                 </div>
-                  <p className="text-xs text-muted-foreground mt-1">Indicates the AI's confidence in the prediction.</p>
-               </div>
-                {result.notes && (
-                   <div className="text-sm border-l-4 border-primary pl-3 py-1 bg-primary/10">
-                       <p className="font-medium text-primary">AI Notes:</p>
-                       <p className="text-foreground/80">{result.notes}</p>
-                   </div>
-                )}
-               <Alert variant="warning" >
-                  <AlertCircle className="h-4 w-4"/>
-                  <AlertTitle className="font-semibold">Important Disclaimer</AlertTitle>
-                  <AlertDescription>
-                      This AI analysis is for informational purposes only and is **not** a medical diagnosis. Always consult a qualified dermatologist or healthcare professional for accurate diagnosis and treatment.
-                  </AlertDescription>
-               </Alert>
-            </div>
-            <Button onClick={onFindClinics} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                 <MapPin className="mr-2 h-4 w-4" /> Find Nearest Clinic
-            </Button>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">Analysis complete, but no result data available. Please try again.</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 // --- Chatbot Component (Keep as is) ---
 function Chatbot() {
@@ -343,21 +257,114 @@ function Chatbot() {
     );
 }
 
+// --- Past Reports Section ---
+function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: PastReport[], onViewPdf: (report: PastReport) => void, onDownloadPdf: (report: PastReport) => void }) {
+    if (!reports || reports.length === 0) {
+        return null; // Don't render if no reports
+    }
+
+    return (
+        <section id="past-reports" className="container mx-auto py-12 px-4">
+            <h2 className="text-3xl font-semibold text-center mb-8 flex items-center justify-center gap-2">
+                <History className="h-7 w-7"/> Past Analysis Reports
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {reports.map((report) => (
+                    <Card key={report.id} className="overflow-hidden text-sm">
+                        <CardHeader className="p-3 pb-1">
+                            <div className="flex justify-between items-center">
+                                <CardTitle className="text-base">{report.predictedDisease}</CardTitle>
+                                <span className="text-xs text-muted-foreground">
+                                    {format(new Date(report.timestamp), 'MMM d, yyyy')}
+                                </span>
+                            </div>
+                            <CardDescription className="text-xs">
+                                Confidence: {report.confidencePercentage.toFixed(1)}%
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-1">
+                             <div className="aspect-square relative w-full bg-muted rounded overflow-hidden mb-2">
+                                 <Image
+                                    src={report.imageUri}
+                                    alt={`Report ${report.id}`}
+                                    layout="fill"
+                                    objectFit="cover"
+                                 />
+                             </div>
+                            <div className="flex gap-2 justify-end">
+                                <Button variant="outline" size="sm" onClick={() => onViewPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
+                                    <Eye className="h-3 w-3 mr-1"/> View
+                                </Button>
+                                <Button variant="default" size="sm" onClick={() => onDownloadPdf(report)} className="text-xs h-7 px-2" disabled={!report.pdfDataUri}>
+                                    <Download className="h-3 w-3 mr-1"/> Download
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+
 // --- Main Home Component ---
 export default function Home() {
+  // State for analysis results and errors
   const [result, setResult] = useState<ClassifyImageOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // State for UI elements
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null); // Store full data URI for preview & PDF
   const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData | null>(null);
   const [isClinicModalOpen, setIsClinicModalOpen] = useState(false);
   const [clinicData, setClinicData] = useState<ClinicInfo[] | null>(null);
   const [clinicLoading, setClinicLoading] = useState(false);
   const [clinicError, setClinicError] = useState<string | null>(null);
+  const [isResultsPopupOpen, setIsResultsPopupOpen] = useState(false);
+  const [pastReports, setPastReports] = useState<PastReport[]>([]); // State for past reports
+
 
   const uploadSectionRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
+
+  // --- Load past reports from session storage on mount ---
+  useEffect(() => {
+    try {
+      const storedReports = sessionStorage.getItem('pastSkinReports');
+      if (storedReports) {
+        setPastReports(JSON.parse(storedReports));
+      }
+    } catch (e) {
+        console.error("Failed to load past reports from session storage:", e);
+        // Optionally clear corrupted data: sessionStorage.removeItem('pastSkinReports');
+    }
+  }, []);
+
+  // --- Save past reports to session storage when they change ---
+   useEffect(() => {
+    try {
+        // Only store essential data to avoid large session storage usage
+        const reportsToStore = pastReports.map(r => ({
+             id: r.id,
+             timestamp: r.timestamp,
+             predictedDisease: r.predictedDisease,
+             confidencePercentage: r.confidencePercentage,
+             // Store a smaller preview or omit full image/pdf URI for session storage efficiency
+             imageUri: r.imageUri.substring(0, 100) + '...', // Example: Store truncated URI
+             questionnaireSummary: r.questionnaireSummary,
+             // pdfDataUri: r.pdfDataUri // Maybe omit PDF data URI from session storage
+        }));
+        sessionStorage.setItem('pastSkinReports', JSON.stringify(reportsToStore));
+    } catch (e) {
+        console.error("Failed to save past reports to session storage:", e);
+        // Handle potential storage full errors etc.
+        toast({ variant: "destructive", title: "Storage Error", description: "Could not save report history. Storage might be full." });
+    }
+  }, [pastReports, toast]); // Add toast to dependencies
+
 
   // Handle file selection from ImageUpload component
   const handleFileSelect = (file: File | null) => {
@@ -365,11 +372,13 @@ export default function Home() {
       if (file) {
           const reader = new FileReader();
           reader.onloadend = () => {
-              setImagePreview(reader.result as string);
+              const dataUri = reader.result as string;
+              setImagePreview(dataUri); // Store the full data URI
           };
           reader.readAsDataURL(file);
-           setResult(null);
+           setResult(null); // Reset results on new image
            setApiError(null);
+           // Do NOT open results popup here, wait for analysis
       } else {
           setImagePreview(null);
       }
@@ -383,9 +392,48 @@ export default function Home() {
         title: "Assessment Saved",
         description: "Your assessment details have been recorded.",
     });
-    setResult(null);
+    setResult(null); // Reset results if assessment changes
     setApiError(null);
+    // Do NOT open results popup here
   };
+
+
+   // --- Function to add a report to past reports ---
+   const addPastReport = async (reportData: ClassifyImageOutput, qData: QuestionnaireData | null, imgUri: string) => {
+       const reportId = `report-${Date.now()}`; // Simple unique ID
+       const timestamp = Date.now();
+
+       let pdfDataUri: string | undefined = undefined;
+       try {
+           // Generate PDF immediately to store its data URI
+           const doc = generatePdfReport(reportData, qData, imgUri);
+           pdfDataUri = doc.output('datauristring');
+           console.log("Generated PDF for report", reportId);
+       } catch (pdfError) {
+           console.error("Failed to generate PDF for past report:", pdfError);
+           toast({ variant: "destructive", title: "PDF Generation Failed", description: "Could not generate PDF for this report." });
+           // Proceed without PDF data if generation fails
+       }
+
+       const newReport: PastReport = {
+           id: reportId,
+           timestamp: timestamp,
+           predictedDisease: reportData.predictedDisease,
+           confidencePercentage: reportData.confidencePercentage,
+           imageUri: imgUri, // Store the image data URI
+           questionnaireSummary: qData ? `Age: ${qData.age ?? 'N/A'}, Symptom: ${qData.symptoms ?? 'N/A'}` : undefined,
+           pdfDataUri: pdfDataUri, // Store the PDF data
+       };
+
+       setPastReports(prevReports => {
+            const updatedReports = [newReport, ...prevReports];
+            // Optional: Limit the number of stored reports
+            // const MAX_REPORTS = 10;
+            // return updatedReports.slice(0, MAX_REPORTS);
+            return updatedReports;
+       });
+   };
+
 
   // Handle the combined analysis logic
   const handleAnalysis = async () => {
@@ -397,7 +445,7 @@ export default function Home() {
          });
          return;
      }
-    if (!selectedFile) {
+    if (!selectedFile || !imagePreview) { // Also check for imagePreview (data URI)
          toast({
            variant: "destructive",
            title: "Image Required",
@@ -411,106 +459,82 @@ export default function Home() {
     setLoading(true);
     setApiError(null);
     setResult(null);
+    setIsResultsPopupOpen(true); // Open the popup immediately to show loading state
 
     try {
-        const reader = new FileReader();
-        reader.readAsDataURL(selectedFile);
-        reader.onload = async () => {
-            const imageUri = reader.result as string;
+        // Image URI is already available in imagePreview state
+        const imageUri = imagePreview;
 
-            // **Simulated** Image Quality Checks (Replace with actual logic if available)
-            // For now, we assume the image is clear and contains skin.
-            // In a real scenario, you might use a separate function or API call here.
-            const isClearImage = true; // Placeholder
-            const hasHumanSkinContent = true; // Placeholder
+        // **Simulated** Image Quality Checks (already handled in classifyImage flow)
+        const isClearImage = true; // Placeholder - flow handles this
+        const hasHumanSkinContent = true; // Placeholder - flow handles this
 
-            console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData, isClear: isClearImage, hasHumanSkin: hasHumanSkinContent });
+        console.log("Calling classifyImage API with:", { imageUri: 'URI_preview_omitted', questionnaireData, isClear: isClearImage, hasHumanSkin: hasHumanSkinContent });
 
-            if (!isClearImage || !hasHumanSkinContent) {
-                const errorMsg = "Image error. Upload clear human skin image.";
-                setApiError(errorMsg);
-                setLoading(false);
-                 toast({
+        try {
+            const apiResult = await classifyImage({
+                imageUri: imageUri,
+                questionnaireData: questionnaireData || undefined,
+                isClear: isClearImage,
+                hasHumanSkin: hasHumanSkinContent,
+            });
+            console.log("API Response:", apiResult);
+
+             // Check for specific error messages related to image quality from the flow itself
+             if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
+                 setApiError(apiResult.predictedDisease);
+                 setResult(null); // Keep result null on error
+                  toast({
                     variant: "destructive",
-                    title: "Image Quality Issue",
-                    description: errorMsg,
-                  });
-                return;
-            }
-
-            try {
-                const apiResult = await classifyImage({
-                    imageUri: imageUri,
-                    questionnaireData: questionnaireData || undefined,
-                    isClear: isClearImage,
-                    hasHumanSkin: hasHumanSkinContent,
-                });
-                console.log("API Response:", apiResult);
-
-                 // Check for specific error messages related to image quality from the flow itself
-                 if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
-                     setApiError(apiResult.predictedDisease);
-                     setResult(null);
-                      toast({
-                        variant: "destructive",
-                        title: "Analysis Issue",
-                        description: apiResult.predictedDisease,
-                       });
-                } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
-                    setResult(apiResult);
-                    console.log("Classification successful:", apiResult);
-                    const resultElement = document.getElementById('result-section');
-                    resultElement?.scrollIntoView({ behavior: "smooth", block: "center" });
-                 } else {
-                     console.error("Invalid API response structure:", apiResult);
-                     setApiError("Received an unexpected result from the analysis service.");
-                     setResult(null);
-                     toast({
-                        variant: "destructive",
-                        title: "Analysis Error",
-                        description: "Received an unexpected result from the analysis service.",
-                      });
-                 }
-
-            } catch (innerError: any) {
-                 console.error("Error during classifyImage API call:", innerError);
-                 let errorMessage = "Failed to classify the image due to an unexpected error.";
-                 if (innerError instanceof Error) {
-                      if (innerError.message.includes('deadline')) {
-                          errorMessage = "Analysis timed out. The server might be busy. Please try again.";
-                      } else if (innerError.message.includes('output')) {
-                           errorMessage = "The AI failed to generate a valid analysis. Please check the image or try again.";
-                      } else {
-                          errorMessage = `Failed to classify the image: ${innerError.message}`;
-                      }
-                 }
-                 setApiError(errorMessage);
-                 setResult(null);
+                    title: "Analysis Issue",
+                    description: apiResult.predictedDisease,
+                   });
+            } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
+                setResult(apiResult); // Set the result
+                setApiError(null); // Clear previous errors
+                console.log("Classification successful:", apiResult);
+                // Add to past reports after successful analysis
+                 addPastReport(apiResult, questionnaireData, imageUri);
+             } else {
+                 console.error("Invalid API response structure:", apiResult);
+                 setApiError("Received an unexpected result from the analysis service.");
+                 setResult(null); // Keep result null on error
                  toast({
                     variant: "destructive",
                     title: "Analysis Error",
-                    description: errorMessage,
+                    description: "Received an unexpected result from the analysis service.",
                   });
-            } finally {
-                 setLoading(false);
-                 console.log("Finished image classification attempt.");
-            }
-        };
-        reader.onerror = (error) => {
-            console.error("Error reading file:", error);
-            setApiError("Could not read the uploaded image file.");
-            setLoading(false);
+             }
+
+        } catch (innerError: any) {
+             console.error("Error during classifyImage API call:", innerError);
+             let errorMessage = "Failed to classify the image due to an unexpected error.";
+             if (innerError instanceof Error) {
+                  if (innerError.message.includes('deadline')) {
+                      errorMessage = "Analysis timed out. The server might be busy. Please try again.";
+                  } else if (innerError.message.includes('output')) {
+                       errorMessage = "The AI failed to generate a valid analysis. Please check the image or try again.";
+                  } else {
+                      errorMessage = `Failed to classify the image: ${innerError.message}`;
+                  }
+             }
+             setApiError(errorMessage);
+             setResult(null); // Keep result null on error
              toast({
                 variant: "destructive",
-                title: "File Read Error",
-                description: "Could not read the uploaded image file.",
+                title: "Analysis Error",
+                description: errorMessage,
               });
-        };
+        } finally {
+             setLoading(false); // Stop loading AFTER getting result or error
+             console.log("Finished image classification attempt.");
+        }
 
     } catch (error) {
       console.error("Error preparing analysis:", error);
       setApiError("An error occurred before starting the analysis.");
-      setLoading(false);
+      setLoading(false); // Stop loading on setup error
+      setIsResultsPopupOpen(false); // Close popup if setup fails
        toast({
             variant: "destructive",
             title: "Setup Error",
@@ -601,6 +625,43 @@ export default function Home() {
        });
      }
    };
+
+
+  // --- Functions to handle PDF viewing/downloading for Past Reports ---
+  const handleViewPastReportPdf = (report: PastReport) => {
+       // Try to find the full report data in state first
+       const fullReport = pastReports.find(r => r.id === report.id);
+       const pdfUri = fullReport?.pdfDataUri ?? report.pdfDataUri; // Use full data if available
+
+      if (!pdfUri) {
+          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded." });
+          return;
+      }
+      const pdfWindow = window.open("");
+      if (pdfWindow) {
+          pdfWindow.document.write(`<iframe width='100%' height='100%' src='${pdfUri}'></iframe>`);
+          pdfWindow.document.title = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}`;
+      } else {
+          toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
+      }
+  };
+
+  const handleDownloadPastReportPdf = (report: PastReport) => {
+       const fullReport = pastReports.find(r => r.id === report.id);
+       const pdfUri = fullReport?.pdfDataUri ?? report.pdfDataUri;
+
+       if (!pdfUri) {
+          toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
+          return;
+       }
+       const link = document.createElement('a');
+       link.href = pdfUri;
+       link.download = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`;
+       document.body.appendChild(link);
+       link.click();
+       document.body.removeChild(link);
+   };
+
 
 
   const scrollToUpload = () => {
@@ -713,7 +774,7 @@ export default function Home() {
       <section id="upload" ref={uploadSectionRef} className="container mx-auto py-16 px-4 bg-gradient-to-b from-background to-secondary/30 dark:to-secondary/20 rounded-lg my-8">
         <div className="max-w-2xl mx-auto">
            <div className="mb-6">
-                <ImageUpload onImageUpload={handleFileSelect} loading={loading} currentImagePreview={imagePreview} />
+                <ImageUpload onImageUpload={handleFileSelect} loading={loading && !isResultsPopupOpen} currentImagePreview={imagePreview} />
            </div>
 
             {questionnaireData && (
@@ -729,19 +790,26 @@ export default function Home() {
 
 
             <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
-                {loading ? (
+                {loading && !isResultsPopupOpen ? ( // Show loader only if popup isn't open yet
                     <>
                         <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                        Analyzing...
+                        Preparing Analysis...
                     </>
-                ) : 'Analyze Now'}
+                 ) : loading && isResultsPopupOpen ? (
+                     <>
+                        <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                         Analyzing... (Popup Open)
+                     </>
+                 ) : (
+                    'Analyze Now'
+                 )}
             </Button>
-
-           <div id="result-section">
-                <ResultDisplay result={result} loading={loading && !apiError} apiError={apiError} onFindClinics={handleFindClinics} />
-           </div>
         </div>
       </section>
+
+
+      {/* Past Reports Section */}
+       <PastReportsSection reports={pastReports} onViewPdf={handleViewPastReportPdf} onDownloadPdf={handleDownloadPastReportPdf} />
 
 
       {/* Educational Section */}
@@ -789,6 +857,17 @@ export default function Home() {
           clinics={clinicData}
           loading={clinicLoading}
           error={clinicError}
+        />
+
+       {/* Analysis Results Popup */}
+        <ResultsPopupModal
+            isOpen={isResultsPopupOpen}
+            onClose={() => setIsResultsPopupOpen(false)}
+            result={result}
+            questionnaireData={questionnaireData}
+            imageUri={imagePreview} // Pass the image data URI
+            loading={loading} // Pass loading state
+            apiError={apiError} // Pass error state
         />
     </div>
   );
