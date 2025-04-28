@@ -428,6 +428,7 @@ export default function Home() {
           reader.readAsDataURL(file);
            setResult(null); // Reset results on new image
            setApiError(null);
+           setIsResultsPopupOpen(false); // Close popup if open on new image upload
       } else {
           setImagePreview(null);
       }
@@ -443,6 +444,7 @@ export default function Home() {
     });
     setResult(null); // Reset results if assessment changes
     setApiError(null);
+    setIsResultsPopupOpen(false); // Close popup if assessment changes
   };
 
 
@@ -709,15 +711,36 @@ export default function Home() {
       }
   };
 
-  const handleDownloadPastReportPdf = (report: PastReport) => {
-       if (!report.pdfDataUri) {
-          // Attempt regeneration similar to view function if needed, or just show error
-           toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
-           return;
-       }
-       // Use the utility function with the data URI
-       downloadPdf(report.pdfDataUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`);
-   };
+    // --- Function to handle PDF downloading for Past Reports ---
+    const handleDownloadPastReportPdf = async (report: PastReport) => {
+        if (!report.pdfDataUri) {
+            // Attempt regeneration similar to view function if needed
+            if (report.predictedDisease && report.imageUri) {
+                toast({ title: "Regenerating PDF for Download...", description: "Please wait." });
+                try {
+                    const regeneratedDoc = generatePdfReport(
+                        { predictedDisease: report.predictedDisease, confidencePercentage: report.confidencePercentage, notes: "" }, // Minimal necessary data
+                        null, // Questionnaire might be unavailable
+                        report.imageUri
+                    );
+                    const regeneratedUri = regeneratedDoc.output('datauristring');
+                    // Update state (optional but good)
+                     setPastReports(prev => prev.map(p => p.id === report.id ? { ...p, pdfDataUri: regeneratedUri } : p));
+                    downloadPdf(regeneratedUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`); // Use the utility
+                    return; // Exit after successful regeneration and download
+                } catch (regenError) {
+                    console.error("Failed to regenerate PDF for download:", regenError);
+                    toast({ variant: "destructive", title: "PDF Regeneration Failed", description: "Could not regenerate the PDF for download." });
+                    return; // Exit if regeneration fails
+                }
+            } else {
+                toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
+                return; // Exit if not enough data to regenerate
+            }
+        }
+        // If pdfDataUri exists, use the utility function with the data URI
+        downloadPdf(report.pdfDataUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`);
+    };
 
 
   // --- Scroll to Past Reports Section ---
@@ -877,7 +900,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="max-w-2xl mx-auto">
                <div className="mb-6">
-                    <ImageUpload onImageUpload={handleFileSelect} loading={loading && !isResultsPopupOpen} currentImagePreview={imagePreview} />
+                    <ImageUpload onImageUpload={handleFileSelect} loading={loading} currentImagePreview={imagePreview} />
                </div>
 
                 {questionnaireData && (
@@ -893,7 +916,7 @@ export default function Home() {
 
 
                 <Button onClick={handleAnalysis} disabled={loading || (!selectedFile && !questionnaireData)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-6 text-lg py-3">
-                    {loading && isResultsPopupOpen ? ( // Show loading text only when popup is open
+                    {loading ? ( // Show loading indicator *during* API call
                         <>
                             <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
                             Analyzing...
@@ -943,7 +966,7 @@ export default function Home() {
           <div className="flex space-x-4">
             <Link href="/privacy" className="hover:text-primary text-xs">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-primary text-xs">Terms of Service</Link>
-            <Link href="mailto:support@skinseva.example.com" className="hover:text-primary text-xs">Contact Us</Link>
+            <Link href="mailto:support@skinseva.com" className="hover:text-primary text-xs">Contact Us</Link>
           </div>
         </div>
       </footer>
@@ -969,12 +992,33 @@ export default function Home() {
             apiError={apiError} // Pass error state
             onFindClinics={handleFindClinics} // Pass clinic search trigger
              // Pass handlers for PDF actions
-             onViewPdf={async () => { if (result && imagePreview) viewPdf(generatePdfReport(result, questionnaireData, imagePreview)); }}
-             onDownloadPdf={async () => { if (result && imagePreview) downloadPdf(generatePdfReport(result, questionnaireData, imagePreview).output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`); }}
+             onViewPdf={async () => {
+                 if (result && imagePreview) {
+                     const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp); // Find the corresponding past report
+                     if (reportToUse?.pdfDataUri) {
+                         viewPdf(reportToUse.pdfDataUri);
+                     } else if (result) {
+                         // Fallback to generating if not found in past reports (shouldn't happen often)
+                         viewPdf(generatePdfReport(result, questionnaireData, imagePreview));
+                     } else {
+                         toast({ variant: "destructive", title: "PDF Error", description: "Could not find PDF data to view." });
+                     }
+                 }
+             }}
+             onDownloadPdf={async () => {
+                 if (result && imagePreview) {
+                      const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp); // Find the corresponding past report
+                      if (reportToUse?.pdfDataUri) {
+                         downloadPdf(reportToUse.pdfDataUri, `SkinSewa_Report_${format(new Date(reportToUse.timestamp), 'yyyy-MM-dd')}.pdf`);
+                      } else if (result) {
+                         // Fallback to generating if not found
+                         downloadPdf(generatePdfReport(result, questionnaireData, imagePreview).output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+                      } else {
+                           toast({ variant: "destructive", title: "PDF Error", description: "Could not find PDF data to download." });
+                      }
+                 }
+             }}
         />
     </div>
   );
 }
-
-
-    

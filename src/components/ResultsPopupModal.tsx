@@ -11,6 +11,7 @@ import { CheckCircle, XCircle, AlertCircle, HeartPulse, Download, Eye, Loader2, 
 import type { ClassifyImageOutput, QuestionnaireData } from "@/ai/flows/classify-image";
 import { useToast } from "@/hooks/use-toast"; // Import useToast for better feedback
 import { jsPDF } from "jspdf"; // Import jsPDF
+import { generatePdfReport, viewPdf, downloadPdf } from "@/lib/pdfUtils"; // Import PDF utilities
 
 interface ResultsPopupModalProps {
     isOpen: boolean;
@@ -21,8 +22,8 @@ interface ResultsPopupModalProps {
     loading: boolean; // Indicate if the analysis is still loading initially
     apiError: string | null;
     onFindClinics: () => void; // Callback to trigger clinic search
-    onViewPdf: () => Promise<void>; // Added prop for viewing PDF
-    onDownloadPdf: () => Promise<void>; // Added prop for downloading PDF
+    onViewPdf: () => Promise<void>; // Prop for viewing PDF
+    onDownloadPdf: () => Promise<void>; // Prop for downloading PDF
 }
 
 export function ResultsPopupModal({
@@ -45,7 +46,7 @@ export function ResultsPopupModal({
         if (!result || !imageUri || isPdfGenerating) return;
         setIsPdfGenerating(true);
         try {
-            await onViewPdf(); // Call the passed handler
+            await onViewPdf(); // Call the passed handler from parent
         } catch (error) {
             console.error("Error in onViewPdf prop:", error);
             toast({ variant: "destructive", title: "PDF Error", description: "Failed to view PDF report." });
@@ -58,7 +59,7 @@ export function ResultsPopupModal({
         if (!result || !imageUri || isPdfGenerating) return;
          setIsPdfGenerating(true);
         try {
-             await onDownloadPdf(); // Call the passed handler
+             await onDownloadPdf(); // Call the passed handler from parent
         } catch (error) {
              console.error("Error in onDownloadPdf prop:", error);
             toast({ variant: "destructive", title: "PDF Error", description: "Failed to download PDF report." });
@@ -71,8 +72,8 @@ export function ResultsPopupModal({
     const getConditionDetails = (predictedDisease: string | undefined) => {
         // Placeholder data matching the main page
         const conditions = [
-            { name: "Acne", description: "Common condition with pimples, blackheads.", icon: <CheckCircle /> },
-            { name: "Eczema", description: "Causes itchy, red, inflamed skin patches.", icon: <CheckCircle /> },
+            { name: "Acne Vulgaris", description: "Common condition with pimples, blackheads.", icon: <CheckCircle /> },
+            { name: "Eczema (Atopic Dermatitis)", description: "Causes itchy, red, inflamed skin patches.", icon: <CheckCircle /> },
             { name: "Psoriasis", description: "Autoimmune issue with red, scaly patches.", icon: <CheckCircle /> },
             { name: "Vitiligo", description: "Characterized by loss of skin color in patches.", icon: <CheckCircle /> },
             { name: "Melanoma", description: "Serious skin cancer needing early detection.", icon: <AlertCircle className="text-destructive"/> },
@@ -222,7 +223,7 @@ export function ResultsPopupModal({
                     {!loading && !apiError && result && !isErrorResult && imageUri && (
                         <div className="flex gap-2 w-full sm:w-auto">
                             <Button
-                                onClick={handleViewPdfClick} // Use the new handler
+                                onClick={handleViewPdfClick} // Use the handler from props
                                 variant="secondary"
                                 disabled={isPdfGenerating}
                                 className="flex-1 sm:flex-none" // Ensure buttons fit on mobile
@@ -231,7 +232,7 @@ export function ResultsPopupModal({
                                 View Report
                             </Button>
                             <Button
-                                onClick={handleDownloadPdfClick} // Use the new handler
+                                onClick={handleDownloadPdfClick} // Use the handler from props
                                 variant="default"
                                 disabled={isPdfGenerating}
                                 className="flex-1 sm:flex-none" // Ensure buttons fit on mobile
@@ -246,5 +247,3 @@ export function ResultsPopupModal({
         </Dialog>
     );
 }
-
-    
