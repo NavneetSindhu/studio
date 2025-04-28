@@ -829,25 +829,22 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {skinConditions.slice(0, 6).map((condition, index) => ( // Display first 6 for better layout
-                 <Card key={condition.name} className={cn(
-                    "condition-card text-left hover:shadow-xl transition-shadow duration-300 border-l-4 rounded-lg overflow-hidden bg-background flex flex-col justify-between p-6 h-full relative group transform hover:scale-105 hover:z-10",
-                     // Gradient and border color applied via CSS in globals.css
-                 )}>
+              {skinConditions.slice(0, 6).map((condition, index) => (
+                 <Card key={condition.name} className="condition-card group"> {/* Added group class here */}
                     <div>
                         <CardTitle className="text-xl mb-2 font-semibold text-card-foreground">{condition.name}</CardTitle>
                         <CardDescription className="text-sm leading-relaxed text-card-foreground/80 mb-4">{condition.description}</CardDescription>
                     </div>
                     <div className="flex items-end justify-between mt-4">
-                        <div className="absolute bottom-4 left-4 text-current opacity-70 group-hover:opacity-90 transition-opacity">
+                        <div className="text-current opacity-70 group-hover:opacity-90 transition-opacity">
                             {condition.icon}
                         </div>
-                         <Link href="/skin-info" className="absolute bottom-4 right-4 h-8 w-8 rounded-full bg-current/80 text-card flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-0 translate-x-2">
+                         <Link href="/skin-info" className="condition-arrow"> {/* Use CSS class */}
                              <ChevronRight className="h-5 w-5" />
                          </Link>
-                         {/* Placeholder for expanded info on hover */}
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-lg">
-                           <p className="text-white text-xs absolute bottom-4 left-4 right-4">Click arrow for more details...</p>
+                         {/* Hover content using CSS class */}
+                         <div className="condition-hover-content">
+                           <p className="condition-hover-text">Click arrow for more details...</p>
                          </div>
                     </div>
                  </Card>
@@ -964,5 +961,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

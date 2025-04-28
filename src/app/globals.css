@@ -103,43 +103,93 @@
   }
 }
 
+/* Animation Keyframes */
+@keyframes scroll-right-to-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%); /* Translate by half the width */
+  }
+}
+
+/* Animation Utilities */
+@layer utilities {
+  .animate-scrollRightToLeft {
+    animation: scroll-right-to-left 40s linear infinite;
+  }
+}
+
+
 /* Additional style for the specific header implementation */
 .header-logo-sewa {
     color: hsl(var(--accent)); /* Bright Orange-Yellow for 'Sewa' */
 }
 
 /* Assign card accent colors dynamically (example for 3 colors) */
-.condition-card:nth-child(3n+1) {
+/* Base styles for the card including transitions */
+.condition-card {
+    /* Removed 'group' from @apply */
+    @apply text-left hover:shadow-xl transition-all duration-300 border-l-4 rounded-lg overflow-hidden bg-background flex flex-col justify-between p-6 h-full relative transform hover:scale-105 hover:z-10;
+    background: linear-gradient(135deg, var(--card-gradient-from), var(--card-gradient-to));
+}
+
+/* Light Mode Gradients and Borders */
+:root .condition-card:nth-child(3n+1) {
     --card-gradient-from: hsl(var(--card-accent-1) / 0.1);
     --card-gradient-to: hsl(var(--card) / 0.9);
     border-color: hsl(var(--card-accent-1));
 }
-.condition-card:nth-child(3n+2) {
+:root .condition-card:nth-child(3n+2) {
      --card-gradient-from: hsl(var(--card-accent-2) / 0.1);
      --card-gradient-to: hsl(var(--card) / 0.9);
      border-color: hsl(var(--card-accent-2));
 }
-.condition-card:nth-child(3n+3) {
+:root .condition-card:nth-child(3n+3) {
      --card-gradient-from: hsl(var(--card-accent-3) / 0.1);
      --card-gradient-to: hsl(var(--card) / 0.9);
      border-color: hsl(var(--card-accent-3));
 }
 
-/* Apply gradient using the variables */
-.condition-card {
-    background: linear-gradient(135deg, var(--card-gradient-from), var(--card-gradient-to));
-}
 
-
+/* Dark Mode Gradients and Borders */
 .dark .condition-card:nth-child(3n+1) {
     --card-gradient-from: hsl(var(--card-accent-1) / 0.2);
     --card-gradient-to: hsl(var(--card) / 0.8);
+     border-color: hsl(var(--card-accent-1)); /* Ensure border color is set for dark mode too */
 }
 .dark .condition-card:nth-child(3n+2) {
      --card-gradient-from: hsl(var(--card-accent-2) / 0.2);
      --card-gradient-to: hsl(var(--card) / 0.8);
+     border-color: hsl(var(--card-accent-2));
 }
 .dark .condition-card:nth-child(3n+3) {
      --card-gradient-from: hsl(var(--card-accent-3) / 0.2);
      --card-gradient-to: hsl(var(--card) / 0.8);
+      border-color: hsl(var(--card-accent-3));
+}
+
+/* Hover content within the card */
+.condition-card .condition-hover-content {
+    /* Removed 'group-hover:opacity-100' from @apply */
+    @apply absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 transition-opacity duration-300 pointer-events-none rounded-lg flex flex-col justify-end;
+}
+
+.condition-card .condition-hover-text {
+    @apply text-white text-xs;
+}
+
+.condition-card .condition-arrow {
+    /* Removed 'group-hover:opacity-100' and 'group-hover:translate-x-0' from @apply */
+    /* Replaced bg-current/80 with bg-primary/80 */
+    @apply absolute bottom-4 right-4 h-8 w-8 rounded-full bg-primary/80 text-card flex items-center justify-center opacity-0 transition-all duration-300 transform translate-x-2 pointer-events-auto;
+}
+
+/* Apply group-hover effects directly (Tailwind recommends this over @apply for variants) */
+.condition-card:hover .condition-hover-content {
+    @apply opacity-100;
+}
+
+.condition-card:hover .condition-arrow {
+    @apply opacity-100 translate-x-0;
 }
