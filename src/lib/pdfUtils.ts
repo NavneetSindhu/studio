@@ -97,17 +97,17 @@ export const generatePdfReport = (
     doc.setFont('helvetica', 'bold');
     doc.text('Predicted Condition:', margin + 5, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY = addTextWithWrap(result.predictedDisease, margin + 5 + 40, currentY, infoMaxWidth - 40); // Adjust x for value
+    currentY = addTextWithWrap(result.predictedDisease || "N/A", margin + 5 + 40, currentY, infoMaxWidth - 40); // Adjust x for value
 
     doc.setFont('helvetica', 'bold');
     doc.text('Confidence Score:', margin + 5, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY = addTextWithWrap(`${result.confidencePercentage.toFixed(1)}%`, margin + 5 + 40, currentY, infoMaxWidth - 40);
+    currentY = addTextWithWrap(`${result.confidencePercentage?.toFixed(1) ?? 'N/A'}%`, margin + 5 + 40, currentY, infoMaxWidth - 40); // Handle potential undefined
 
     doc.setFont('helvetica', 'bold');
     doc.text('AI Notes:', margin + 5, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY = addTextWithWrap(result.notes || 'None', margin + 5 + 40, currentY, infoMaxWidth - 40);
+    currentY = addTextWithWrap(result.notes || 'None', margin + 5 + 40, currentY, infoMaxWidth - 40); // Use fallback if notes undefined
     currentY += 5;
 
     // --- Uploaded Image ---
@@ -195,30 +195,30 @@ export const generatePdfReport = (
     return doc;
 };
 
-// Utility function to view the PDF in a new tab using data URI
-export const viewPdf = (doc: jsPDF) => { // Renamed parameter for clarity
-  const pdfDataUri = doc.output('datauristring');
-  const pdfWindow = window.open("");
-  if (pdfWindow) {
-      pdfWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>SkinSewa Report Preview</title>
-              <style>
-                  body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-                  iframe { border: none; width: 100%; height: 100%; }
-              </style>
-          </head>
-          <body>
-              <iframe src='${pdfDataUri}'></iframe>
-          </body>
-          </html>
-      `);
-       pdfWindow.document.close(); // Important for some browsers
-  } else {
-      alert("Could not open PDF viewer. Please ensure popups are allowed for this site."); // More user-friendly alert
-  }
+// Utility function to view the PDF in a new tab using data URI or jsPDF object
+export const viewPdf = (pdfSource: jsPDF | string) => {
+    const pdfDataUri = typeof pdfSource === 'string' ? pdfSource : pdfSource.output('datauristring');
+    const pdfWindow = window.open("");
+    if (pdfWindow) {
+        pdfWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>SkinSewa Report Preview</title>
+                <style>
+                    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+                    iframe { border: none; width: 100%; height: 100%; }
+                </style>
+            </head>
+            <body>
+                <iframe src='${pdfDataUri}'></iframe>
+            </body>
+            </html>
+        `);
+        pdfWindow.document.close(); // Important for some browsers
+    } else {
+        alert("Could not open PDF viewer. Please ensure popups are allowed for this site."); // More user-friendly alert
+    }
 };
 
 // Utility function to download the PDF using data URI
@@ -235,3 +235,5 @@ export const downloadPdf = (pdfDataUri: string, filename: string = "SkinSewa_Rep
     alert("Failed to download the PDF report. Please try again.");
   }
 };
+
+    

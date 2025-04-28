@@ -181,6 +181,7 @@ function Chatbot() {
         if (newMessage.trim() !== "" && !isBotTyping) {
             const userMessage = { text: newMessage, sender: "user" as const };
             setMessages(prev => [...prev, userMessage]);
+            const currentMessage = newMessage; // Capture message before clearing
             setNewMessage("");
             setIsBotTyping(true);
 
@@ -190,7 +191,7 @@ function Chatbot() {
                     text: msg.text,
                     sender: msg.sender
                  }));
-                const chatInput: ChatInput = { message: newMessage, history: historyToSend }; // Include history
+                const chatInput: ChatInput = { message: currentMessage, history: historyToSend }; // Include history
                 const botResponse: ChatOutput = await chatWithBot(chatInput);
                 const botMessage = { text: botResponse.response, sender: "bot" as const };
                 setMessages(prev => [...prev, botMessage]);
@@ -700,15 +701,8 @@ export default function Home() {
       }
       // If pdfDataUri exists, use the standard jsPDF object creation
       try {
-          const doc = new jsPDF(); // Create a new instance (jsPDF doesn't easily load from data URI)
-          // This is a workaround: open the data URI directly
-          const pdfWindow = window.open("");
-          if (pdfWindow) {
-              pdfWindow.document.write(`<iframe width='100%' height='100%' src='${report.pdfDataUri}'></iframe>`);
-              pdfWindow.document.title = `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}`;
-          } else {
-              toast({ variant: "destructive", title: "Popup Blocked", description: "Could not open PDF viewer. Please allow popups." });
-          }
+          // Use the utility function to open the PDF from data URI
+          viewPdf(report.pdfDataUri);
       } catch (e) {
          console.error("Error viewing PDF from Data URI:", e);
          toast({ variant: "destructive", title: "PDF Error", description: "Could not display the PDF report." });
@@ -736,6 +730,26 @@ export default function Home() {
   const scrollToUpload = () => {
     uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  // --- Helper function to create a PDF document instance from data URI ---
+  // This is needed because viewPdf and downloadPdf might need the jsPDF object
+  // If regeneration happens, they get it directly. If viewing/downloading existing,
+  // this function helps (though viewPdf utility directly handles data URI now).
+  const getPdfDocFromUri = (dataUri: string): jsPDF | null => {
+      try {
+          // Note: jsPDF doesn't directly load from a data URI.
+          // The viewPdf and downloadPdf utilities now handle the data URI directly.
+          // This function might be less necessary now but kept for potential future use cases
+          // where the jsPDF object itself is needed from a stored URI.
+          console.warn("Creating a new jsPDF instance; direct loading from data URI is not supported by jsPDF.");
+          // Return null or handle appropriately as direct loading isn't straightforward.
+          return null;
+      } catch (error) {
+          console.error("Error processing PDF Data URI:", error);
+          return null;
+      }
+  };
+
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-background text-foreground">
@@ -961,3 +975,6 @@ export default function Home() {
     </div>
   );
 }
+
+
+    
