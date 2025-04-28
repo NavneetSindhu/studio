@@ -163,6 +163,7 @@ function Chatbot() {
     const [newMessage, setNewMessage] = useState("");
     const [isBotTyping, setIsBotTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for scrolling
+    const { toast } = useToast(); // Use toast for error feedback
 
     const toggleChat = () => {
         setIsOpen(!isOpen);
@@ -174,8 +175,10 @@ function Chatbot() {
     };
 
     useEffect(() => {
-        scrollToBottom(); // Scroll whenever messages change
-    }, [messages]);
+        if (isOpen) {
+            scrollToBottom(); // Scroll when chat opens and messages change
+        }
+    }, [messages, isOpen]);
 
     const handleSendMessage = async () => {
         if (newMessage.trim() !== "" && !isBotTyping) {
@@ -192,11 +195,18 @@ function Chatbot() {
                     sender: msg.sender
                  }));
                 const chatInput: ChatInput = { message: currentMessage, history: historyToSend }; // Include history
+                console.log("Sending to chatFlow:", chatInput); // Debug log
                 const botResponse: ChatOutput = await chatWithBot(chatInput);
+                console.log("Received from chatFlow:", botResponse); // Debug log
                 const botMessage = { text: botResponse.response, sender: "bot" as const };
                 setMessages(prev => [...prev, botMessage]);
             } catch (error) {
                 console.error("Error calling chatbot flow:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Chat Error",
+                    description: "Sorry, I couldn't connect to the AI assistant. Please try again later.",
+                });
                 const errorMessage = { text: "Sorry, I encountered an error. Please try again.", sender: "bot" as const };
                 setMessages(prev => [...prev, errorMessage]);
             } finally {
@@ -322,8 +332,8 @@ function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: Pa
                                     <Image
                                         src={report.imageUri} // Use the full URI stored in state for display
                                         alt={`Report ${report.id}`}
-                                        layout="fill"
-                                        objectFit="cover"
+                                        fill // Use fill instead of layout="fill"
+                                        style={{ objectFit: "cover" }} // Use style prop for objectFit
                                         onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/placeholder/200'; }} // Fallback
                                     />
                                 </div>
@@ -347,7 +357,7 @@ function PastReportsSection({ reports, onViewPdf, onDownloadPdf }: { reports: Pa
 
 
 // --- Main Home Component ---
-export default function Home() {
+export default function Home({ params }: { params: { locale: string } }) { // Accept locale param
   // State for analysis results and errors
   const [result, setResult] = useState<ClassifyImageOutput | null>(null);
   const [loading, setLoading] = useState(false);
@@ -749,7 +759,7 @@ export default function Home() {
       {/* Enhanced Header */}
        <nav className="w-full py-3 bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
           <div className="container mx-auto flex items-center justify-between px-4 relative">
-              <Link href="/" className="flex items-center space-x-2 text-3xl font-bold hover:opacity-90 transition-opacity">
+              <Link href={`/${params.locale}`} className="flex items-center space-x-2 text-3xl font-bold hover:opacity-90 transition-opacity">
                   <span>Skin</span><span className="header-logo-sewa">Sewa</span>
               </Link>
               <span className="text-sm opacity-80 absolute left-1/2 -translate-x-1/2 hidden lg:inline">
@@ -759,10 +769,10 @@ export default function Home() {
                   {/* Navigation Links */}
                   <div className="hidden md:flex items-center space-x-4">
                        <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
-                           <Link href="/" className="text-sm flex items-center gap-1"><Leaf className="h-4 w-4 text-accent"/>Home</Link>
+                           <Link href={`/${params.locale}`} className="text-sm flex items-center gap-1"><Leaf className="h-4 w-4 text-accent"/>Home</Link>
                        </Button>
                        <Button variant="ghost" asChild size="sm" className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
-                           <Link href="/skin-info" className="text-sm">Skin Disease Info</Link>
+                           <Link href={`/${params.locale}/skin-info`} className="text-sm">Skin Disease Info</Link>
                        </Button>
                        {/* Button to access Past Reports */}
                        <Button
@@ -781,14 +791,14 @@ export default function Home() {
                      <Image
                        src="https://picsum.photos/seed/doctor/200"
                        alt="Doctor Illustration"
-                       layout="fill"
-                       objectFit="contain"
+                       fill // Use fill instead of layout="fill"
+                       style={{ objectFit: "contain" }} // Use style prop for objectFit
                        className="drop-shadow-lg"
                      />
                  </div>
 
                  <div className="flex items-center space-x-1 md:space-x-2 md:pl-4 md:border-l border-primary-foreground/20 md:ml-4">
-                     <LanguageToggle />
+                     <LanguageToggle currentLocale={params.locale} /> {/* Pass current locale */}
                      <ThemeToggle />
                  </div>
 
@@ -831,7 +841,7 @@ export default function Home() {
         <Card className="bg-card rounded-lg p-6 md:p-10"> {/* Wrap section content in Card */}
           <CardHeader className="text-center mb-8">
             <h2 className="text-3xl font-semibold mb-2">Common Conditions We Analyze</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href="/skin-info" className="text-primary hover:underline">Learn more</Link>.</p>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Our AI provides preliminary insights based on the HAM10000 dataset and common conditions. <Link href={`/${params.locale}/skin-info`} className="text-primary hover:underline">Learn more</Link>.</p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -845,7 +855,7 @@ export default function Home() {
                         <div className="text-current opacity-70 group-hover:opacity-90 transition-opacity">
                             {condition.icon}
                         </div>
-                         <Link href="/skin-info" className="condition-arrow"> {/* Use CSS class */}
+                         <Link href={`/${params.locale}/skin-info`} className="condition-arrow"> {/* Use CSS class */}
                              <ChevronRight className="h-5 w-5" />
                          </Link>
                          {/* Hover content using CSS class */}
@@ -933,8 +943,8 @@ export default function Home() {
             <span className="text-destructive font-semibold">Disclaimer: This tool is for informational purposes only and does not provide medical advice.</span>
           </div>
           <div className="flex space-x-4">
-            <Link href="/privacy" className="hover:text-primary text-xs">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-primary text-xs">Terms of Service</Link>
+            <Link href={`/${params.locale}/privacy`} className="hover:text-primary text-xs">Privacy Policy</Link>
+            <Link href={`/${params.locale}/terms`} className="hover:text-primary text-xs">Terms of Service</Link>
             <Link href="mailto:support@skinseva.com" className="hover:text-primary text-xs">Contact Us</Link>
           </div>
         </div>
@@ -1025,3 +1035,4 @@ export default function Home() {
   );
 }
 
+    
