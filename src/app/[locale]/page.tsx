@@ -465,9 +465,12 @@ export default function Home() {
            // Proceed without PDF data if generation fails
        }
 
+        // Find the correct timestamp associated with the result if available
+        const resultTimestamp = (reportData as any).timestamp || timestamp; // Fallback to current time
+
        const newReport: PastReport = {
            id: reportId,
-           timestamp: timestamp,
+           timestamp: resultTimestamp, // Use timestamp from result if possible
            predictedDisease: reportData.predictedDisease,
            confidencePercentage: reportData.confidencePercentage,
            imageUri: imgUri, // Store the full image data URI in the runtime state
@@ -525,23 +528,26 @@ export default function Home() {
                 isClear: isClearImage, // Flow now uses the image directly
                 hasHumanSkin: hasHumanSkinContent, // Flow now uses the image directly
             });
-            console.log("API Response:", apiResult);
+             // Add a timestamp to the result object for later identification
+             const resultWithTimestamp = { ...apiResult, timestamp: Date.now() };
+            console.log("API Response:", resultWithTimestamp);
+
 
              // Check for specific error messages related to image quality from the flow itself
-             if (apiResult && typeof apiResult.predictedDisease === 'string' && (apiResult.predictedDisease.includes("poor for analysis") || apiResult.predictedDisease.includes("not appear to contain human skin"))) {
-                 setApiError(apiResult.predictedDisease);
-                 setResult(apiResult); // Set the result even if it's an error message for display
+             if (resultWithTimestamp && typeof resultWithTimestamp.predictedDisease === 'string' && (resultWithTimestamp.predictedDisease.includes("poor for analysis") || resultWithTimestamp.predictedDisease.includes("not appear to contain human skin"))) {
+                 setApiError(resultWithTimestamp.predictedDisease);
+                 setResult(resultWithTimestamp); // Set the result even if it's an error message for display
                  toast({
                     variant: "warning", // Changed to warning
                     title: "Analysis Issue",
-                    description: apiResult.predictedDisease,
+                    description: resultWithTimestamp.predictedDisease,
                    });
-             } else if (apiResult && apiResult.predictedDisease && typeof apiResult.confidencePercentage === 'number') {
-                setResult(apiResult); // Set the successful result
+             } else if (resultWithTimestamp && resultWithTimestamp.predictedDisease && typeof resultWithTimestamp.confidencePercentage === 'number') {
+                setResult(resultWithTimestamp); // Set the successful result
                 setApiError(null); // Clear previous errors
-                console.log("Classification successful:", apiResult);
+                console.log("Classification successful:", resultWithTimestamp);
                 // Add to past reports state after successful analysis (includes PDF generation)
-                await addPastReport(apiResult, questionnaireData, imageUri);
+                 await addPastReport(resultWithTimestamp, questionnaireData, imageUri);
              } else {
                  console.error("Invalid API response structure:", apiResult);
                  setApiError("Received an unexpected result from the analysis service.");
@@ -674,72 +680,35 @@ export default function Home() {
    };
 
 
-  // --- Functions to handle PDF viewing/downloading for Past Reports ---
-  const handleViewPastReportPdf = async (report: PastReport) => {
-      if (!report.pdfDataUri) {
-          // Attempt to regenerate PDF if missing and other data exists
-          if (report.predictedDisease && report.imageUri) {
-              toast({ title: "Regenerating PDF...", description: "Please wait." });
-              try {
-                  const regeneratedDoc = generatePdfReport(
-                      { predictedDisease: report.predictedDisease, confidencePercentage: report.confidencePercentage, notes: "" }, // Minimal necessary data
-                      null, // Questionnaire might be unavailable from session
-                      report.imageUri
-                  );
-                  const regeneratedUri = regeneratedDoc.output('datauristring');
-                   // Update state (optional but good)
-                   setPastReports(prev => prev.map(p => p.id === report.id ? { ...p, pdfDataUri: regeneratedUri } : p));
-                   viewPdf(regeneratedDoc); // Use the utility
-                   return; // Exit after successful regeneration and view
-              } catch (regenError) {
-                  console.error("Failed to regenerate PDF:", regenError);
-                   toast({ variant: "destructive", title: "PDF Regeneration Failed", description: "Could not regenerate the PDF." });
-                   return; // Exit if regeneration fails
-              }
-          } else {
-              toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be loaded or regenerated." });
-              return; // Exit if not enough data to regenerate
-          }
-      }
-      // If pdfDataUri exists, use the standard jsPDF object creation
-      try {
-          // Use the utility function to open the PDF from data URI
-          viewPdf(report.pdfDataUri);
-      } catch (e) {
-         console.error("Error viewing PDF from Data URI:", e);
-         toast({ variant: "destructive", title: "PDF Error", description: "Could not display the PDF report." });
-      }
-  };
-
-    // --- Function to handle PDF downloading for Past Reports ---
-    const handleDownloadPastReportPdf = async (report: PastReport) => {
+   // --- Functions to handle PDF viewing/downloading for Past Reports ---
+    const handleViewPastReportPdf = async (report: PastReport) => {
+        console.log("Attempting to view PDF for report:", report.id, "URI exists:", !!report.pdfDataUri);
         if (!report.pdfDataUri) {
-            // Attempt regeneration similar to view function if needed
-            if (report.predictedDisease && report.imageUri) {
-                toast({ title: "Regenerating PDF for Download...", description: "Please wait." });
-                try {
-                    const regeneratedDoc = generatePdfReport(
-                        { predictedDisease: report.predictedDisease, confidencePercentage: report.confidencePercentage, notes: "" }, // Minimal necessary data
-                        null, // Questionnaire might be unavailable
-                        report.imageUri
-                    );
-                    const regeneratedUri = regeneratedDoc.output('datauristring');
-                    // Update state (optional but good)
-                     setPastReports(prev => prev.map(p => p.id === report.id ? { ...p, pdfDataUri: regeneratedUri } : p));
-                    downloadPdf(regeneratedUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`); // Use the utility
-                    return; // Exit after successful regeneration and download
-                } catch (regenError) {
-                    console.error("Failed to regenerate PDF for download:", regenError);
-                    toast({ variant: "destructive", title: "PDF Regeneration Failed", description: "Could not regenerate the PDF for download." });
-                    return; // Exit if regeneration fails
-                }
-            } else {
-                toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report could not be downloaded." });
-                return; // Exit if not enough data to regenerate
-            }
+            toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report is not currently available." });
+            // Optionally add regeneration logic here if needed, similar to handleDownload
+            return;
         }
-        // If pdfDataUri exists, use the utility function with the data URI
-        downloadPdf(report.pdfDataUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd')}.pdf`);
+        try {
+            viewPdf(report.pdfDataUri);
+        } catch (e) {
+           console.error("Error viewing PDF from Data URI:", e);
+           toast({ variant: "destructive", title: "PDF Error", description: "Could not display the PDF report." });
+        }
+    };
+
+    const handleDownloadPastReportPdf = async (report: PastReport) => {
+         console.log("Attempting to download PDF for report:", report.id, "URI exists:", !!report.pdfDataUri);
+        if (!report.pdfDataUri) {
+             toast({ variant: "destructive", title: "PDF Not Available", description: "The PDF for this report cannot be downloaded currently." });
+             // Optionally add regeneration logic here if needed
+             return;
+        }
+        try {
+             downloadPdf(report.pdfDataUri, `SkinSewa_Report_${format(new Date(report.timestamp), 'yyyy-MM-dd_HHmm')}.pdf`);
+         } catch (error) {
+             console.error("Error downloading PDF:", error);
+             toast({ variant: "destructive", title: "Download Failed", description: "Could not download the PDF report." });
+         }
     };
 
 
@@ -992,33 +961,67 @@ export default function Home() {
             apiError={apiError} // Pass error state
             onFindClinics={handleFindClinics} // Pass clinic search trigger
              // Pass handlers for PDF actions
-             onViewPdf={async () => {
-                 if (result && imagePreview) {
-                     const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp); // Find the corresponding past report
-                     if (reportToUse?.pdfDataUri) {
+            onViewPdf={async () => {
+                 if (!result || !imagePreview) {
+                     toast({ variant: "destructive", title: "PDF Error", description: "Missing data to generate PDF." });
+                     return;
+                 }
+                 // Find the corresponding past report using the timestamp added during analysis
+                 const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp);
+                  console.log("Viewing PDF, found report:", reportToUse?.id, "URI:", reportToUse?.pdfDataUri);
+                 if (reportToUse?.pdfDataUri) {
+                     try {
                          viewPdf(reportToUse.pdfDataUri);
-                     } else if (result) {
-                         // Fallback to generating if not found in past reports (shouldn't happen often)
-                         viewPdf(generatePdfReport(result, questionnaireData, imagePreview));
-                     } else {
-                         toast({ variant: "destructive", title: "PDF Error", description: "Could not find PDF data to view." });
+                     } catch (e) {
+                         console.error("Error viewing existing PDF:", e);
+                         toast({ variant: "destructive", title: "PDF Error", description: "Could not display the existing PDF." });
                      }
+                 } else {
+                    // Fallback: Generate and view if not found or URI missing (should be rare now)
+                    console.warn("PDF URI missing in past report, generating on the fly for view.");
+                    try {
+                        const newDoc = generatePdfReport(result, questionnaireData, imagePreview);
+                        viewPdf(newDoc);
+                        // Optionally update the state, though this might be redundant if saving works correctly
+                         // setPastReports(prev => prev.map(p => p.id === reportToUse?.id ? { ...p, pdfDataUri: newDoc.output('datauristring') } : p));
+                    } catch (genError) {
+                        console.error("Error generating PDF for view:", genError);
+                        toast({ variant: "destructive", title: "PDF Generation Error", description: "Could not generate the PDF for viewing." });
+                    }
                  }
              }}
              onDownloadPdf={async () => {
-                 if (result && imagePreview) {
-                      const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp); // Find the corresponding past report
-                      if (reportToUse?.pdfDataUri) {
-                         downloadPdf(reportToUse.pdfDataUri, `SkinSewa_Report_${format(new Date(reportToUse.timestamp), 'yyyy-MM-dd')}.pdf`);
-                      } else if (result) {
-                         // Fallback to generating if not found
-                         downloadPdf(generatePdfReport(result, questionnaireData, imagePreview).output('datauristring'), `SkinSewa_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-                      } else {
-                           toast({ variant: "destructive", title: "PDF Error", description: "Could not find PDF data to download." });
-                      }
-                 }
+                if (!result || !imagePreview) {
+                    toast({ variant: "destructive", title: "PDF Error", description: "Missing data to generate PDF." });
+                    return;
+                }
+                 // Find the corresponding past report
+                 const reportToUse = pastReports.find(r => r.timestamp === (result as any).timestamp);
+                  console.log("Downloading PDF, found report:", reportToUse?.id, "URI:", reportToUse?.pdfDataUri);
+                  if (reportToUse?.pdfDataUri) {
+                     try {
+                         downloadPdf(reportToUse.pdfDataUri, `SkinSewa_Report_${format(new Date(reportToUse.timestamp), 'yyyy-MM-dd_HHmm')}.pdf`);
+                     } catch (e) {
+                        console.error("Error downloading existing PDF:", e);
+                        toast({ variant: "destructive", title: "Download Failed", description: "Could not download the existing PDF report." });
+                     }
+                  } else {
+                     // Fallback: Generate and download if not found or URI missing
+                      console.warn("PDF URI missing in past report, generating on the fly for download.");
+                     try {
+                         const newDoc = generatePdfReport(result, questionnaireData, imagePreview);
+                         const pdfUri = newDoc.output('datauristring');
+                          downloadPdf(pdfUri, `SkinSewa_Report_${format(new Date((result as any).timestamp || Date.now()), 'yyyy-MM-dd_HHmm')}.pdf`);
+                          // Optionally update the state
+                          // setPastReports(prev => prev.map(p => p.id === reportToUse?.id ? { ...p, pdfDataUri: pdfUri } : p));
+                     } catch (genError) {
+                        console.error("Error generating PDF for download:", genError);
+                        toast({ variant: "destructive", title: "PDF Generation Error", description: "Could not generate the PDF for download." });
+                     }
+                  }
              }}
         />
     </div>
   );
 }
+
